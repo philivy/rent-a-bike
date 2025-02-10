@@ -1,0 +1,17 @@
+mkdir .venv
+python3 -m venv path/to/.venv
+source .venv/bin/activate 
+pip install fastapi uvicorn sqlalchemy
+
+tester le scrypt main.py  ----> uvicorn main:app --reload
+
+sudo apt install sqlite3  
+sqlite3 bikes.db
+.tables
+
+ pip install FastAPI HTTPException Depends
+
+export QT_QPA_PLATFORM=wayland ./sqlitestudio
+
+
+
