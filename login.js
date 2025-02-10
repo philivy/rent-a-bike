@@ -34,11 +34,11 @@ router.post('/login', (req, res) => {
     }
 
     if (!user) {
-      console.log("Utilisateur non trouvé");
-      return res.status(401).send("Identifiants incorrects");
+      console.log("Email inconnu");
+      return res.status(401).json({ error: "Email inconnu" });
     }
 
-    // Vérifier le mot de passe (Assurez-vous que les mots de passe sont hashés dans la base)
+    // Vérifier le mot de passe
     bcrypt.compare(password, user.password, (err, result) => {
       if (err) {
         console.error("Erreur de vérification du mot de passe:", err.message);
@@ -50,7 +50,7 @@ router.post('/login', (req, res) => {
         return res.send("Connexion réussie !");
       } else {
         console.log("Mot de passe incorrect");
-        return res.status(401).send("Identifiants incorrects");
+        return res.status(401).json({ error: "Mot de passe incorrect" });
       }
     });
   });

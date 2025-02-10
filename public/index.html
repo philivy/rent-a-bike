@@ -7,68 +7,57 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
       text-align: center;
-      margin: 0;
-      padding: 0;
+      background-color: #f4f4f4;
     }
 
     h1 {
-      margin-top: 50px;
-      font-size: 32px;
+      margin-top: 40px;
+      font-size: 28px;
       color: #333;
     }
 
     form {
-      background: white;
-      max-width: 450px;
+      background: #e6f7e6; /* Vert très clair */
+      max-width: 500px;
       margin: 20px auto;
       padding: 30px;
       border-radius: 10px;
       box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
       display: flex;
       flex-direction: column;
-      gap: 15px;
-    }
-
-    .email-container, .password-container {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      position: relative;
+      gap: 20px;
     }
 
     input {
-      font-size: 18px;
+      font-size: 16px;
       padding: 12px;
       border: 1px solid #ccc;
       border-radius: 5px;
-      flex-grow: 1;
-    }
-
-    input:invalid {
-      border-color: red;
+      width: 100%;
+      margin-bottom: 15px;
     }
 
     .error-message {
       color: red;
       font-size: 14px;
       display: none;
-      white-space: nowrap;
-      width: auto;
+    }
+
+    .password-container {
+      position: relative;
     }
 
     .eye-icon {
       position: absolute;
       right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
       cursor: pointer;
-      font-size: 18px;
-      color: #666;
     }
 
     button {
-      font-size: 20px;
+      font-size: 18px;
       background-color: #28a745;
       color: white;
       padding: 12px;
@@ -76,6 +65,7 @@
       border-radius: 5px;
       cursor: pointer;
       transition: 0.3s;
+      margin-top: 10px;
     }
 
     button:hover {
@@ -86,45 +76,76 @@
 <body>
   <h1>Bienvenue à Rent-a-Bike</h1>
 
-  <form action="/login" method="POST">
-    <div class="email-container">
-      <input type="email" name="email" placeholder="Email" autocomplete="off" required />
-      <span class="error-message" id="emailError">Format invalide</span>
+  <form id="loginForm">
+    <div>
+      <input type="email" name="email" placeholder="Email" id="emailInput" required />
+      <div id="emailError" class="error-message">Format email invalide</div>
+      <div id="emailNotFoundError" class="error-message">Email inconnu</div>
     </div>
 
     <div class="password-container">
-      <input type="password" name="password" placeholder="Mot de passe" autocomplete="new-password" required />
+      <input type="password" name="password" placeholder="Mot de passe" id="passwordInput" required />
       <span class="eye-icon" onclick="togglePassword()">👁️</span>
     </div>
-    
+
     <button type="submit">Se connecter</button>
   </form>
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const emailInput = document.querySelector("input[name='email']");
+      const emailInput = document.getElementById("emailInput");
       const emailError = document.getElementById("emailError");
+      const emailNotFoundError = document.getElementById("emailNotFoundError");
 
-      // Vérifier le format email à la sortie du champ (événement blur)
+      function resetErrors() {
+        emailError.style.display = "none";
+        emailNotFoundError.style.display = "none";
+        emailInput.style.borderColor = ""; // Réinitialise la bordure
+      }
+
       emailInput.addEventListener("blur", function () {
+        resetErrors(); // Nettoyage avant affichage
         const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-
         if (!emailPattern.test(emailInput.value)) {
-          emailError.style.display = "block"; // Affiche le message d'erreur
-          emailInput.style.borderColor = "red"; // Effet visuel d'erreur
-        } else {
-          emailError.style.display = "none"; // Cache le message si l'email est valide
-          emailInput.style.borderColor = ""; // Réinitialise la bordure
+          emailError.style.display = "block";
+          emailInput.style.borderColor = "red";
         }
       });
 
-      // Empêcher l'affichage de l'alerte de Firefox pour la gestion des mots de passe
-      document.querySelector("form").setAttribute("autocomplete", "off");
+      document.getElementById("loginForm").addEventListener("submit", function (event) {
+        event.preventDefault();
+        
+        resetErrors(); // Nettoyage avant validation
+
+        const email = emailInput.value;
+        const password = document.getElementById("passwordInput").value;
+
+        if (!email) {
+          emailError.style.display = "block";
+          return;
+        }
+
+        fetch('/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.error === "Email inconnu") {
+            emailNotFoundError.style.display = "block";
+          } else {
+            alert('Connexion réussie');
+          }
+        })
+        .catch(error => {
+          console.error('Erreur:', error);
+        });
+      });
     });
 
-    // Fonction pour basculer la visibilité du mot de passe
     function togglePassword() {
-      const passwordInput = document.querySelector("input[name='password']");
+      const passwordInput = document.getElementById("passwordInput");
       passwordInput.type = (passwordInput.type === "password") ? "text" : "password";
     }
   </script>
