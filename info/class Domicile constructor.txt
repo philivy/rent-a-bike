@@ -1,0 +1,140 @@
+class Domicile {
+    constructor(adresse, ville, etage = null, residence = null, codePostal, pays) {
+        this.adresse = adresse; 
+        this.ville = ville;     
+        this.etage = etage;     
+        this.residence = residence; 
+        this.codePostal = codePostal; 
+        this.pays = pays;       
+    }
+
+    toString() {
+        let adresseComplete = `${this.adresse}, ${this.ville}, ${this.codePostal}, ${this.pays}`;
+        if (this.etage) {
+            adresseComplete += `, Etage: ${this.etage}`;
+        }
+        if (this.residence) {
+            adresseComplete += `, Résidence: ${this.residence}`;
+        }
+        return adresseComplete;
+    }
+}
+
+// Fonction pour vérifier le format d'un IBAN
+function isValidIban(iban) {
+    const regexIban = /^[A-Z]{2}\d{2}[A-Z0-9]{4,30}$/;
+    return regexIban.test(iban);
+}
+
+// Fonction pour vérifier le format d'un RIB
+function isValidRib(rib) {
+    const regexRib = /^\d{5}\d{5}\d{11}\d{2}$/;
+    return regexRib.test(rib);
+}
+
+class MagasinLocation {
+    constructor(nom, domicile, ribIban) {
+        this.nom = nom; 
+        this.domicile = domicile; 
+        if (!isValidIban(ribIban) && !isValidRib(ribIban)) {
+            throw new Error("Le format du RIB/IBAN est invalide.");
+        }
+        this.ribIban = ribIban; 
+        this.articles = [];
+    }
+
+    ajouterArticle(article) {
+        this.articles.push(article);
+    }
+
+    listerArticles() {
+        return this.articles.map(article => article.toString());
+    }
+
+    reserverArticle(id_article) {
+        const article = this.articles.find(a => a.id_article === id_article);
+        if (article) {
+            if (article.disponible) {
+                article.disponible = false;
+                return `L'article ${article.nom} a été réservé avec succès.`;
+            } else {
+                return `L'article ${article.nom} est déjà réservé.`;
+            }
+        }
+        return "Article introuvable.";
+    }
+
+    payer(id_article, montant, client, moyenPaiement) {
+        const article = this.articles.find(a => a.id_article === id_article);
+        if (article) {
+            if (article.disponible) {
+                return `L'article ${article.nom} est encore disponible. Vous ne pouvez pas payer sans réservation.`;
+            }
+            if (montant >= article.prix) {
+                const facture = new Facture(article, montant, this, client, moyenPaiement);
+                return facture.toString();
+            } else {
+                return `Le montant de ${montant}€ est insuffisant pour l'article ${article.nom}. Le prix est ${article.prix}€.`;
+            }
+        }
+        return "Article introuvable.";
+    }
+}
+
+class Article {
+    constructor(id_article, nom, categorie, prix, disponible = true) {
+        this.id_article = id_article;
+        this.nom = nom;
+        this.categorie = categorie;
+        this.prix = prix;
+        this.disponible = disponible;
+    }
+
+    toString() {
+        return `${this.nom} (${this.categorie}) - ${this.disponible ? 'Disponible' : 'Réservé'} - ${this.prix}€`;
+    }
+}
+
+class Facture {
+    constructor(article, montant, magasin, client, moyenPaiement) {
+        this.article = article;
+        this.montant = montant;
+        this.magasin = magasin;
+        this.client = client;
+        this.moyenPaiement = moyenPaiement; 
+        this.date = new Date().toLocaleString();
+    }
+
+    toString() {
+        return `
+            Facture pour ${this.article.nom} - ${this.magasin.nom}
+            Magasin situé à : ${this.magasin.domicile}
+            RIB/IBAN du magasin : ${this.magasin.ribIban}
+            Client : ${this.client.nom} (${this.client.domicile})
+            Date : ${this.date}
+            Montant payé : ${this.montant}€
+            Prix de l'article : ${this.article.prix}€
+            Moyen de paiement : ${this.moyenPaiement}
+            ------------------------------------------
+            Article réservé et payé avec succès !
+        `;
+    }
+}
+
+// Exemple d'utilisation
+const domicileClient = new Domicile("12 rue des Lilas", "Paris", "3e", "Résidence Les Acacias", "75012", "France");
+const client = new Client("Jean Dupont", domicileClient);
+
+const domicileMagasin = new Domicile("5 avenue de l'Opéra", "Paris", null, null, "75001", "France");
+try {
+    const magasin1 = new MagasinLocation("Rent-a-Thing Paris", domicileMagasin, "FR76 1234 5678 9012 3456 7890 123");
+    magasin1.ajouterArticle(new Article(1, "Vélo de route", "Vélo", 15));
+    magasin1.ajouterArticle(new Article(2, "Trottinette électrique", "Mobilité", 10));
+
+    console.log(magasin1.listerArticles());  // Affiche les articles
+    console.log(magasin1.reserverArticle(1));  // Réserver un article
+    console.log(magasin1.payer(1, 15, client, "Carte bancaire"));  // Payer la réservation
+} catch (error) {
+    console.error(error.message);  // Si le RIB/IBAN est invalide, une erreur sera lancée
+}
+

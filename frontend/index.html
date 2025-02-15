@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bienvenue à Rent-a-Bike</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f4f4f4;
+    }
+    form {
+      background: #e6f7e6;
+      max-width: 500px;
+      margin: 20px auto;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .error-message {
+      color: red;
+      font-size: 14px;
+      display: none;
+    }
+    button {
+      font-size: 18px;
+      background-color: #28a745;
+      color: white;
+      padding: 12px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.3s;
+      margin-top: 10px;
+    }
+    button:hover {
+      background-color: #218838;
+    }
+  </style>
+</head>
+<body>
+  <h1>Bienvenue à Rent-a-Bike</h1>
+  <form id="loginForm">
+    <div>
+      <input type="email" name="email" placeholder="Email" id="emailInput" required />
+      <div id="emailError" class="error-message">Format email invalide</div>
+      <div id="emailNotFoundError" class="error-message">Email inconnu</div>
+    </div>
+    <div>
+      <input type="password" name="password" placeholder="Mot de passe" id="passwordInput" required />
+    </div>
+    <button type="submit" id="submitButton">Se connecter</button>
+  </form>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const emailInput = document.getElementById("emailInput");
+      const emailError = document.getElementById("emailError");
+      const emailNotFoundError = document.getElementById("emailNotFoundError");
+      const submitButton = document.getElementById("submitButton");
+      let isUnknownEmail = false;
+
+      function resetErrors() {
+        emailError.style.display = "none";
+        emailNotFoundError.style.display = "none";
+      }
+
+      // Fonction d'inscription
+      function sabonner() {
+        const email = emailInput.value;
+        const password = document.getElementById("passwordInput").value;  // Récupère la valeur du mot de passe
+
+        fetch('/api/inscription', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, password: password })  // Envoie le mot de passe
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            alert("Inscription réussie !");
+            location.reload();
+          } else {
+            emailNotFoundError.textContent = "Erreur d'inscription : " + data.error;
+            emailNotFoundError.style.display = "block";
+          }
+        })
+        .catch(error => {
+          console.error('Erreur:', error);
+          emailNotFoundError.textContent = "Erreur réseau. Veuillez réessayer.";
+          emailNotFoundError.style.display = "block";
+        });
+      }
+
+      // Gestion du formulaire
+      document.getElementById("loginForm").addEventListener("submit", function (event) {
+        event.preventDefault();
+        resetErrors();
+
+        if (submitButton.dataset.action === "subscribe") {
+          sabonner();
+          return;
+        }
+
+        // Connexion
+        fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: emailInput.value, password: document.getElementById("passwordInput").value })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.error === "Email inconnu") {
+            emailNotFoundError.style.display = "block";
+            submitButton.textContent = "S'abonner";
+            submitButton.dataset.action = "subscribe";
+            isUnknownEmail = true;
+          } else {
+            alert('Connexion réussie');
+          }
+        })
+        .catch(error => console.error('Erreur:', error));
+      });
+
+      // Réinitialiser le formulaire si un email inconnu est détecté
+      emailInput.addEventListener("input", function () {
+        if (isUnknownEmail) {
+          submitButton.textContent = "Se connecter";
+          submitButton.dataset.action = "";
+          isUnknownEmail = false;
+        }
+      });
+    });
+  </script>
+</body>
+</html>
