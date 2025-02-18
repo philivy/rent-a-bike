@@ -10,7 +10,9 @@ DROP TABLE IF EXISTS adresse_contact CASCADE;
 -- Table pour les clients
 CREATE TABLE client (
     id SERIAL PRIMARY KEY,
-    nom VARCHAR(100), 
+    nom VARCHAR(100) NOT NULL, 
+    prenom VARCHAR(100) NOT NULL,
+    entreprise VARCHAR(100),
     email VARCHAR(100) NOT NULL,
     taux_reduction DECIMAL(5, 2) DEFAULT 0.00,
     password TEXT NOT NULL,

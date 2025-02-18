@@ -1,15 +1,15 @@
 class Domicile {
-    constructor(adresse, ville, etage = null, residence = null, codePostal, pays) {
+    constructor(adresse, ville, etage = null, residence = null, code_postal, pays) {
         this.adresse = adresse; 
         this.ville = ville;     
         this.etage = etage;     
         this.residence = residence; 
-        this.codePostal = codePostal; 
+        this.code_postal = code_postal; 
         this.pays = pays;       
     }
 
     toString() {
-        let adresseComplete = `${this.adresse}, ${this.ville}, ${this.codePostal}, ${this.pays}`;
+        let adresseComplete = `${this.adresse}, ${this.ville}, ${this.code_postal}, ${this.pays}`;
         if (this.etage) {
             adresseComplete += `, Etage: ${this.etage}`;
         }

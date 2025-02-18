@@ -34,7 +34,7 @@ Ver Cluster Port Status Owner    Data directory              Log file
 sudo gedit /etc/apt/sources.list.d/pgdg.list
 
 /media/yoshi/bigcrush.1.2022/fatgirl/music
-ALTER USER postgres WITH PASSWORD '6cobalt9';
+ALTER USER postgres WITH PASSWORD '6yoshi9';
 psql -U yoshi -d location_system -f  setup.sql
 
 bjr tarif ecran Toshiba Satellite C660

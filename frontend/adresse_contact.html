@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestion des Adresses</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    form {
+      background: #e6f7e6;
+      width: 400px;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 15px;
+    }
+
+    .field input,
+    .field select {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      width: 100%;
+      background-color: #f0f0f0;
+    }
+
+    .field input::placeholder,
+    .field select::placeholder {
+      color: #aaa;
+    }
+
+    .navigation-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 20px 0;
+    }
+
+    .nav-button {
+      font-size: 16px;
+      padding: 8px 12px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .nav-button:hover {
+      background-color: #0056b3;
+    }
+
+    button[type="submit"] {
+      font-size: 16px;
+      background-color: #28a745;
+      color: white;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.3s;
+      display: block;
+      margin: 0 auto;
+    }
+
+    button[type="submit"]:hover {
+      background-color: #218838;
+    }
+
+    .error-message {
+      color: red;
+      font-size: 14px;
+      display: none;
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    /* Style du bouton louer */
+    #louerButton {
+      font-size: 18px;
+      background-color: pink;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      width: 100px;
+      height: 100px;
+      cursor: pointer;
+      transition: 0.3s;
+      display: block;
+    }
+
+    #louerButton:hover {
+      background-color: #e6007e;
+    }
+
+    /* Ajouter le bouton louer à droite des autres boutons de navigation */
+    .navigation-buttons {
+      position: relative;
+    }
+
+    #louerButton {
+      position: absolute;
+      right: 10px; /* Positionné 10px à droite */
+      top: 0; /* Aligné verticalement avec les autres boutons */
+    }
+
+  </style>
+</head>
+<body>
+  <h1>Gestion des Adresses</h1>
+  <form id="addressForm">
+    <div class="field">
+      <input type="text" id="client_id" name="client_id" readonly placeholder="ID client"/>
+    </div>
+    <div class="field">
+      <input type="text" id="id" name="id" readonly placeholder="ID adresse"/>
+    </div>
+    <div class="field">
+      <input type="text" id="rue" name="rue" required placeholder="Entrez la rue"/>
+    </div>
+    <div class="field">
+      <input type="text" id="etage" name="etage" placeholder="Entrez l'étage"/>
+    </div>
+    <div class="field">
+      <input type="text" id="residence" name="residence" placeholder="Entrez la résidence"/>
+    </div>
+    <div class="field">
+      <input type="text" id="ville" name="ville" required placeholder="Entrez la ville"/>
+    </div>
+    <div class="field">
+      <input type="text" id="code_postal" name="code_postal" required placeholder="Entrez le code postal"/>
+    </div>
+    <div class="field">
+      <input type="text" id="pays" name="pays" required placeholder="Entrez le pays"/>
+    </div>
+    <div class="field">
+      <input type="text" id="telephone" name="telephone" required placeholder="Entrez le téléphone"/>
+    </div>
+    <div class="field">
+      <select id="type_adresse" name="type_adresse" required>
+        <option value="0">Personnel</option>
+        <option value="1">Facture</option>
+        <option value="2">Autre</option>
+      </select>
+    </div>
+
+    <div class="navigation-buttons">
+      <button type="button" class="nav-button" id="prevButton"><<<</button>
+      <button type="button" class="nav-button" id="nextButton">>>></button>
+      <!-- Bouton "Louer" déplacé ici -->
+      <button type="button" id="louerButton" onclick="window.location.href='article_a_louer.html';" style="display: none;">Louer</button>
+    </div>
+
+    <button type="submit">Soumettre</button>
+    <div id="error-message" class="error-message"></div>
+  </form>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", async function () {
+      const urlParams = new URLSearchParams(window.location.search);
+      let client_id = urlParams.get('id_client');
+      const client_idInput = document.getElementById("client_id");
+      const adresse_idInput = document.getElementById("id");
+
+      if (!client_id) {
+        client_id = client_idInput.value;
+        if (!client_id) {
+          console.error("Erreur : Pas de client_id dans l'URL et le formulaire est vide.");
+          return;
+        }
+      }
+      client_idInput.value = client_id;
+
+      let adresses = [];
+      let currentIndex = 0;
+
+      const updateForm = (adresse) => {
+        document.getElementById('rue').value = adresse.rue || "";
+        document.getElementById('etage').value = adresse.etage || "";
+        document.getElementById('residence').value = adresse.residence || "";
+        document.getElementById('ville').value = adresse.ville || "";
+        document.getElementById('code_postal').value = adresse.code_postal || "";
+        document.getElementById('pays').value = adresse.pays || "";
+        document.getElementById('telephone').value = adresse.telephone || "";
+        document.getElementById('type_adresse').value = adresse.type_adresse || "0";
+        document.getElementById('id').value = adresse.id || "";
+        adresse_idInput.value = adresse.id || "";
+      };
+
+      async function reloadAdresses() {
+        try {
+          const response = await fetch(`/api/adresse_contact/${client_id}`);
+          const data = await response.json();
+          if (response.ok && data.adresses.length > 0) {
+            adresses = data.adresses;
+            adresses.sort((a, b) => a.id - b.id);
+            currentIndex = adresses.length - 1;
+            updateForm(adresses[currentIndex]);
+            document.getElementById("louerButton").style.display = "block";  // Afficher le bouton Louer
+          } else {
+            document.getElementById("louerButton").style.display = "none";  // Cacher le bouton Louer
+          }
+        } catch (error) {
+          console.error("Erreur lors du rechargement des adresses :", error);
+        }
+      }
+
+      try {
+        const response = await fetch(`/api/adresse_contact/${client_id}`);
+        const data = await response.json();
+        if (response.ok && data.adresses.length > 0) {
+          adresses = data.adresses;
+          adresses.sort((a, b) => a.id - b.id);
+          currentIndex = 0;
+          updateForm(adresses[currentIndex]);
+          document.getElementById("louerButton").style.display = "block";  // Afficher le bouton Louer
+        } else {
+          document.getElementById("addressForm").reset();
+          document.getElementById('client_id').value = client_id;
+          document.getElementById("louerButton").style.display = "none";  // Cacher le bouton Louer
+        }
+      } catch (error) {
+        console.error("Erreur lors de la récupération de l'adresse :", error);
+        document.getElementById("louerButton").style.display = "none";  // Cacher le bouton Louer en cas d'erreur
+      }
+
+      document.getElementById('nextButton').addEventListener('click', () => {
+        if (currentIndex < adresses.length - 1) {
+          currentIndex++;
+          updateForm(adresses[currentIndex]);
+        } else {
+          const clientIdValue = client_idInput.value;
+          document.getElementById("addressForm").reset();
+          client_idInput.value = clientIdValue;
+          currentIndex = adresses.length;
+          document.getElementById('rue').focus();
+        }
+      });
+
+      document.getElementById('prevButton').addEventListener('click', () => {
+        if (currentIndex > 0) {
+          currentIndex--;
+          updateForm(adresses[currentIndex]);
+        }
+      });
+
+      document.getElementById("addressForm").addEventListener("submit", async function (event) {
+        event.preventDefault();
+        const client_idFromForm = document.getElementById("client_id").value;
+        if (!client_idFromForm) {
+           console.error("Erreur : client_id manquant dans le formulaire.");
+           return;
+        }
+        const formDataRaw = new FormData(event.target);
+        const formData = Object.fromEntries(formDataRaw.entries());
+        formData.client_id = client_idFromForm;
+        
+        const endpoint = formData.id ? `/api/adresse_contact/${formData.id}` : '/api/adresse_contact';
+        const method = formData.id ? 'PUT' : 'POST';
+        try {
+           const response = await fetch(endpoint, {
+             method: method,
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify(formData)
+           });
+           const result = await response.json();
+           if (result.success) {
+             alert("Adresse enregistrée avec succès !");
+             if (method === 'POST') {
+                await reloadAdresses();
+             } else if (method === 'PUT') {
+                adresses[currentIndex] = { ...adresses[currentIndex], ...formData };
+                updateForm(adresses[currentIndex]);
+             }
+           } else {
+             document.getElementById("error-message").textContent = "Erreur : " + result.error;
+             document.getElementById("error-message").style.display = "block";
+           }
+        } catch (error) {
+           console.error("Erreur lors de l'envoi :", error);
+           document.getElementById("error-message").textContent = "Une erreur est survenue.";
+           document.getElementById("error-message").style.display = "block";
+        }
+      });
+    });
+  </script>
+</body>
+</html>
+
