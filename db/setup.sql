@@ -1,4 +1,5 @@
 -- Suppression des tables dans l'ordre inverse des dépendances
+-- Cela permet de supprimer d'abord les tables dépendantes avant de supprimer les tables principales
 DROP TABLE IF EXISTS paiement CASCADE;
 DROP TABLE IF EXISTS reservation CASCADE;
 DROP TABLE IF EXISTS tarif CASCADE;
@@ -7,7 +8,11 @@ DROP TABLE IF EXISTS client CASCADE;
 DROP TABLE IF EXISTS magasin_location CASCADE;
 DROP TABLE IF EXISTS adresse_contact CASCADE;
 
+-- 🚀 Activation de l'extension permettant des indices GIST pour les contraintes d'exclusion sur les réservations
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+
 -- Table pour les clients
+-- Cette table contient les informations des clients qui réservent les vélos
 CREATE TABLE client (
     id SERIAL PRIMARY KEY,
     nom VARCHAR(100) NOT NULL, 
@@ -20,6 +25,7 @@ CREATE TABLE client (
 );
 
 -- Table pour les adresses de contact
+-- Un client peut avoir plusieurs adresses de contact (personnelle, de facturation, etc.)
 CREATE TABLE adresse_contact (
     id SERIAL PRIMARY KEY,
     client_id INTEGER REFERENCES client(id) ON DELETE CASCADE, -- Un client peut avoir plusieurs adresses
@@ -34,6 +40,7 @@ CREATE TABLE adresse_contact (
 );
 
 -- Table pour les magasins
+-- Contient les informations sur les magasins de location des vélos
 CREATE TABLE magasin_location (
     id SERIAL PRIMARY KEY,
     nom VARCHAR(100) NOT NULL,
@@ -43,21 +50,24 @@ CREATE TABLE magasin_location (
 );
 
 -- Table pour les articles
+-- Contient les informations sur les vélos disponibles pour la location
 CREATE TABLE article (
     id SERIAL PRIMARY KEY,
+    magasin_id INTEGER REFERENCES magasin_location(id) ON DELETE SET NULL,
     ref_magasin VARCHAR(100) NOT NULL,
-    nom VARCHAR(100) NOT NULL,
-    categorie VARCHAR(100) NOT NULL,
+    designation VARCHAR(100) NOT NULL,
+    type_genre INTEGER CHECK (type_genre IN (0, 1, 2)), -- 0: homme, 1: femme, 2: enfant
+    type_categorie INTEGER CHECK (type_categorie IN (0, 1)), -- 0: normal, 1: electrique 
+    description VARCHAR(100) NOT NULL,
     etat VARCHAR(100) NOT NULL,
     disponible BOOLEAN DEFAULT TRUE,
-    magasin_id INTEGER REFERENCES magasin_location(id) ON DELETE SET NULL,
-    photo BYTEA DEFAULT NULL -- Champ pour stocker l'image en format BLOB
+    photo BYTEA DEFAULT NULL, -- Champ pour stocker l'image en format BLOB
+    qrcode BYTEA DEFAULT NULL
 );
 
--- Table pour les tarifs (lié 1:1 à article)
 CREATE TABLE tarif (
     id SERIAL PRIMARY KEY,
-    article_id INTEGER UNIQUE REFERENCES article(id) ON DELETE CASCADE,
+    article_id INTEGER REFERENCES article(id) ON DELETE CASCADE, -- Un tarif peut être appliqué à plusieurs articles
     prix_horaire DECIMAL(10, 2) NOT NULL CHECK (prix_horaire >= 0),
     prix_demi_journee DECIMAL(10, 2) NOT NULL CHECK (prix_demi_journee >= 0),
     prix_journee DECIMAL(10, 2) NOT NULL CHECK (prix_journee >= 0),
@@ -65,6 +75,7 @@ CREATE TABLE tarif (
 );
 
 -- Table pour les réservations
+-- Cette table contient les informations de réservation des vélos par les clients
 CREATE TABLE reservation (
     id SERIAL PRIMARY KEY,
     client_id INTEGER REFERENCES client(id) ON DELETE CASCADE,
@@ -72,12 +83,26 @@ CREATE TABLE reservation (
     start_date TIMESTAMP NOT NULL,
     end_date TIMESTAMP NOT NULL,
     commentaire TEXT,
-    etat INTEGER CHECK (etat IN (0, 1, 2)), -- 0: normal, 1: cancel, 2: archivé
+    etat INTEGER DEFAULT 0 CHECK (etat IN (0, 1, 2)), -- 0: en cours, 1: annulée, 2: archivée
     magasin_id INTEGER REFERENCES magasin_location(id) ON DELETE SET NULL,
     CHECK (start_date < end_date) -- Vérifie que la date de début est avant la fin
 );
 
+-- 🚲 Empêcher la double réservation d'un même article sur une période qui se chevauche
+-- On crée des indices pour optimiser la recherche de chevauchement dans la table reservation
+CREATE INDEX idx_reservation_article ON reservation (article_id);
+CREATE INDEX idx_reservation_dates ON reservation (start_date, end_date);
+
+-- Contraintes d'exclusion pour empêcher les chevauchements de réservations
+ALTER TABLE reservation
+ADD CONSTRAINT reservation_overlap_check
+EXCLUDE USING GIST (
+    article_id WITH =,
+    daterange(start_date, end_date, '[]') WITH &&
+) WHERE (article_id IS NOT NULL AND etat = 0);
+
 -- Table pour les paiements
+-- Contient les informations liées au paiement des réservations
 CREATE TABLE paiement (
     id SERIAL PRIMARY KEY,
     reservation_id INTEGER REFERENCES reservation(id) ON DELETE CASCADE,
@@ -88,35 +113,10 @@ CREATE TABLE paiement (
 );
 
 -- Ajout de la clé étrangère magasin_id dans client
+-- Cette colonne permet de lier un client à un magasin spécifique
 ALTER TABLE client
 ADD CONSTRAINT fk_magasin
 FOREIGN KEY (magasin_id) REFERENCES magasin_location(id) ON DELETE SET NULL;
 
--- Début des insertions
-BEGIN;
-
--- Insertion d'un client
-INSERT INTO client (nom, email, taux_reduction, password, magasin_id)
-VALUES ('tekos', 'tekos@example.com', 100.00, '0000', NULL);
-
--- Insertion d'une adresse pour le client
-INSERT INTO adresse_contact (client_id, rue, ville, code_postal, pays, telephone, type_adresse)
-VALUES (1, '123 Rue Principale', 'Paris', '75001', 'France', '0123456789', 1);
-
--- Insertion d'une deuxième adresse pour le même client
-INSERT INTO adresse_contact (client_id, rue, ville, code_postal, pays, telephone, type_adresse)
-VALUES (1, '456 Avenue Secondaire', 'Lyon', '69002', 'France', '0987654321', 0);
-
--- Insertion d'un magasin
-INSERT INTO magasin_location (nom, email, rib_iban, adresse_contact_id)
-VALUES ('Magasin Central', 'contact@magasin.com', 'FR761234567890', 1);
-
--- Insertion d'un article
-INSERT INTO article (ref_magasin, nom, categorie, etat, disponible, magasin_id, photo)
-VALUES ('ART001', 'Vélo de course', 'Sport', 'Neuf', TRUE, 1, NULL);
-
--- Insertion d'un tarif pour l'article
-INSERT INTO tarif (article_id, prix_horaire, prix_demi_journee, prix_journee, devise)
-VALUES (1, 10.00, 25.00, 40.00, 'EUR');
-
 COMMIT;
+

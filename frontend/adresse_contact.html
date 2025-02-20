@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gestion des Adresses</title>
   <style>
+    /* Styles généraux pour la page */
     body {
       font-family: Arial, sans-serif;
       background-color: #f4f4f4;
@@ -17,11 +18,13 @@
       align-items: center;
     }
 
+    /* Style du titre principal */
     h1 {
       text-align: center;
       margin-bottom: 20px;
     }
 
+    /* Style du formulaire */
     form {
       background: #e6f7e6;
       width: 400px;
@@ -33,6 +36,7 @@
       justify-content: center;
     }
 
+    /* Style des champs du formulaire */
     .field {
       display: flex;
       flex-direction: column;
@@ -53,6 +57,7 @@
       color: #aaa;
     }
 
+    /* Style des boutons de navigation */
     .navigation-buttons {
       display: flex;
       justify-content: center;
@@ -75,6 +80,7 @@
       background-color: #0056b3;
     }
 
+    /* Style du bouton de soumission */
     button[type="submit"] {
       font-size: 16px;
       background-color: #28a745;
@@ -92,6 +98,7 @@
       background-color: #218838;
     }
 
+    /* Style des messages d'erreur */
     .error-message {
       color: red;
       font-size: 14px;
@@ -100,7 +107,7 @@
       margin-top: 10px;
     }
 
-    /* Style du bouton louer */
+    /* Style du bouton "Louer" */
     #louerButton {
       font-size: 18px;
       background-color: pink;
@@ -118,7 +125,7 @@
       background-color: #e6007e;
     }
 
-    /* Ajouter le bouton louer à droite des autres boutons de navigation */
+    /* Positionnement du bouton "Louer" */
     .navigation-buttons {
       position: relative;
     }
@@ -128,39 +135,48 @@
       right: 10px; /* Positionné 10px à droite */
       top: 0; /* Aligné verticalement avec les autres boutons */
     }
-
   </style>
 </head>
 <body>
   <h1>Gestion des Adresses</h1>
   <form id="addressForm">
+    <!-- Champ pour l'ID client (lecture seule) -->
     <div class="field">
       <input type="text" id="client_id" name="client_id" readonly placeholder="ID client"/>
     </div>
+    <!-- Champ pour l'ID adresse (lecture seule) -->
     <div class="field">
       <input type="text" id="id" name="id" readonly placeholder="ID adresse"/>
     </div>
+    <!-- Champ pour la rue -->
     <div class="field">
       <input type="text" id="rue" name="rue" required placeholder="Entrez la rue"/>
     </div>
+    <!-- Champ pour l'étage -->
     <div class="field">
       <input type="text" id="etage" name="etage" placeholder="Entrez l'étage"/>
     </div>
+    <!-- Champ pour la résidence -->
     <div class="field">
       <input type="text" id="residence" name="residence" placeholder="Entrez la résidence"/>
     </div>
+    <!-- Champ pour la ville -->
     <div class="field">
       <input type="text" id="ville" name="ville" required placeholder="Entrez la ville"/>
     </div>
+    <!-- Champ pour le code postal -->
     <div class="field">
       <input type="text" id="code_postal" name="code_postal" required placeholder="Entrez le code postal"/>
     </div>
+    <!-- Champ pour le pays -->
     <div class="field">
       <input type="text" id="pays" name="pays" required placeholder="Entrez le pays"/>
     </div>
+    <!-- Champ pour le téléphone -->
     <div class="field">
       <input type="text" id="telephone" name="telephone" required placeholder="Entrez le téléphone"/>
     </div>
+    <!-- Champ pour le type d'adresse -->
     <div class="field">
       <select id="type_adresse" name="type_adresse" required>
         <option value="0">Personnel</option>
@@ -169,24 +185,41 @@
       </select>
     </div>
 
+    <!-- Boutons de navigation -->
     <div class="navigation-buttons">
       <button type="button" class="nav-button" id="prevButton"><<<</button>
       <button type="button" class="nav-button" id="nextButton">>>></button>
-      <!-- Bouton "Louer" déplacé ici -->
-      <button type="button" id="louerButton" onclick="window.location.href='article_a_louer.html';" style="display: none;">Louer</button>
+      <!-- Bouton "Louer" pour rediriger vers dispo.html -->
+      <button type="button" id="louerButton" onclick="redirectToDispo()" style="display: none;">Louer</button>
     </div>
 
+    <!-- Bouton de soumission du formulaire -->
     <button type="submit">Soumettre</button>
+    <!-- Message d'erreur -->
     <div id="error-message" class="error-message"></div>
   </form>
 
   <script>
+    // Fonction pour rediriger vers dispo.html avec le client_id
+    function redirectToDispo() {
+      const client_id = document.getElementById("client_id").value; // Récupère le client_id du formulaire
+      if (client_id) {
+        window.location.href = `dispo.html?client_id=${client_id}`; // Redirection avec le client_id
+      } else {
+        console.error("Erreur : client_id manquant."); // Affiche une erreur si le client_id est absent
+        alert("Erreur : client_id manquant."); // Affiche une alerte pour l'utilisateur
+      }
+    }
+
+    // Lorsque le DOM est chargé, exécute ce code
     document.addEventListener("DOMContentLoaded", async function () {
+      // Récupère le client_id depuis l'URL
       const urlParams = new URLSearchParams(window.location.search);
       let client_id = urlParams.get('id_client');
       const client_idInput = document.getElementById("client_id");
       const adresse_idInput = document.getElementById("id");
 
+      // Si le client_id n'est pas dans l'URL, vérifie le formulaire
       if (!client_id) {
         client_id = client_idInput.value;
         if (!client_id) {
@@ -194,11 +227,12 @@
           return;
         }
       }
-      client_idInput.value = client_id;
+      client_idInput.value = client_id; // Met à jour le champ client_id dans le formulaire
 
-      let adresses = [];
-      let currentIndex = 0;
+      let adresses = []; // Liste des adresses
+      let currentIndex = 0; // Index de l'adresse actuellement affichée
 
+      // Met à jour le formulaire avec les données de l'adresse
       const updateForm = (adresse) => {
         document.getElementById('rue').value = adresse.rue || "";
         document.getElementById('etage').value = adresse.etage || "";
@@ -212,63 +246,68 @@
         adresse_idInput.value = adresse.id || "";
       };
 
+      // Recharge les adresses depuis l'API
       async function reloadAdresses() {
         try {
           const response = await fetch(`/api/adresse_contact/${client_id}`);
           const data = await response.json();
           if (response.ok && data.adresses.length > 0) {
             adresses = data.adresses;
-            adresses.sort((a, b) => a.id - b.id);
+            adresses.sort((a, b) => a.id - b.id); // Trie les adresses par ID
             currentIndex = adresses.length - 1;
-            updateForm(adresses[currentIndex]);
-            document.getElementById("louerButton").style.display = "block";  // Afficher le bouton Louer
+            updateForm(adresses[currentIndex]); // Met à jour le formulaire
+            document.getElementById("louerButton").style.display = "block";  // Affiche le bouton Louer
           } else {
-            document.getElementById("louerButton").style.display = "none";  // Cacher le bouton Louer
+            document.getElementById("louerButton").style.display = "none";  // Cache le bouton Louer
           }
         } catch (error) {
           console.error("Erreur lors du rechargement des adresses :", error);
         }
       }
 
+      // Charge les adresses au chargement de la page
       try {
         const response = await fetch(`/api/adresse_contact/${client_id}`);
         const data = await response.json();
         if (response.ok && data.adresses.length > 0) {
           adresses = data.adresses;
-          adresses.sort((a, b) => a.id - b.id);
+          adresses.sort((a, b) => a.id - b.id); // Trie les adresses par ID
           currentIndex = 0;
-          updateForm(adresses[currentIndex]);
-          document.getElementById("louerButton").style.display = "block";  // Afficher le bouton Louer
+          updateForm(adresses[currentIndex]); // Met à jour le formulaire
+          document.getElementById("louerButton").style.display = "block";  // Affiche le bouton Louer
         } else {
-          document.getElementById("addressForm").reset();
+          document.getElementById("addressForm").reset(); // Réinitialise le formulaire
           document.getElementById('client_id').value = client_id;
-          document.getElementById("louerButton").style.display = "none";  // Cacher le bouton Louer
+          document.getElementById("louerButton").style.display = "none";  // Cache le bouton Louer
         }
       } catch (error) {
         console.error("Erreur lors de la récupération de l'adresse :", error);
-        document.getElementById("louerButton").style.display = "none";  // Cacher le bouton Louer en cas d'erreur
+        document.getElementById("louerButton").style.display = "none";  // Cache le bouton Louer en cas d'erreur
       }
 
+      // Gestion du bouton "Suivant"
       document.getElementById('nextButton').addEventListener('click', () => {
         if (currentIndex < adresses.length - 1) {
           currentIndex++;
-          updateForm(adresses[currentIndex]);
+          updateForm(adresses[currentIndex]); // Met à jour le formulaire
         } else {
           const clientIdValue = client_idInput.value;
-          document.getElementById("addressForm").reset();
+          document.getElementById("addressForm").reset(); // Réinitialise le formulaire
           client_idInput.value = clientIdValue;
           currentIndex = adresses.length;
-          document.getElementById('rue').focus();
+          document.getElementById('rue').focus(); // Met le focus sur le champ "rue"
         }
       });
 
+      // Gestion du bouton "Précédent"
       document.getElementById('prevButton').addEventListener('click', () => {
         if (currentIndex > 0) {
           currentIndex--;
-          updateForm(adresses[currentIndex]);
+          updateForm(adresses[currentIndex]); // Met à jour le formulaire
         }
       });
 
+      // Gestion de la soumission du formulaire
       document.getElementById("addressForm").addEventListener("submit", async function (event) {
         event.preventDefault();
         const client_idFromForm = document.getElementById("client_id").value;
@@ -292,10 +331,10 @@
            if (result.success) {
              alert("Adresse enregistrée avec succès !");
              if (method === 'POST') {
-                await reloadAdresses();
+                await reloadAdresses(); // Recharge les adresses après une création
              } else if (method === 'PUT') {
-                adresses[currentIndex] = { ...adresses[currentIndex], ...formData };
-                updateForm(adresses[currentIndex]);
+                adresses[currentIndex] = { ...adresses[currentIndex], ...formData }; // Met à jour l'adresse
+                updateForm(adresses[currentIndex]); // Met à jour le formulaire
              }
            } else {
              document.getElementById("error-message").textContent = "Erreur : " + result.error;
@@ -311,4 +350,3 @@
   </script>
 </body>
 </html>
-

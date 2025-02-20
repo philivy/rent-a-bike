@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Disponibilité</title>
+  <link rel="stylesheet" href="dispo.css">
+  <style>
+    /* Style pour la modale */
+    #myModal {
+      display: none; /* Masqué par défaut */
+      position: fixed;
+      z-index: 1; /* Au-dessus du reste */
+      padding-top: 100px;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgb(0, 0, 0);
+      background-color: rgba(0, 0, 0, 0.9); /* Fond sombre */
+    }
+
+    /* Modale image */
+    .modal-content {
+      margin: auto;
+      display: block;
+      width: 80%;
+      max-width: 700px;
+    }
+
+    /* Fermer le bouton */
+    .close {
+      position: absolute;
+      top: 15px;
+      right: 35px;
+      color: #f1f1f1;
+      font-size: 40px;
+      font-weight: bold;
+      transition: 0.3s;
+    }
+
+    .close:hover,
+    .close:focus {
+      color: #bbb;
+      text-decoration: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Vérifier la disponibilité</h2>
+    <form id="searchForm">
+      <div class="form-row">
+        <label for="start_date">Date de début:</label>
+        <input type="date" id="start_date" required>
+        <label for="start_time">Heure de début:</label>
+        <input type="time" id="start_time" required>
+      </div>
+      <div class="form-row">
+        <label for="end_date">Date de fin:</label>
+        <input type="date" id="end_date" required>
+        <label for="end_time">Heure de fin:</label>
+        <input type="time" id="end_time" required>
+      </div>
+      <button type="submit">Rechercher</button>
+    </form>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>Référence</th>
+          <th>Désignation</th>
+          <th>Genre</th>
+          <th>Etat</th>
+          <th>Magasin</th>
+          <th>Photo</th>
+          <th>QR Code</th>
+        </tr>
+      </thead>
+      <tbody id="articleList">
+        <!-- Les vélos disponibles seront ajoutés ici -->
+      </tbody>
+    </table>
+
+    <div class="navigation-buttons">
+      <button id="louerButton">Louer</button>
+    </div>
+  </div>
+
+  <!-- Modale pour l'image -->
+  <div id="myModal" class="modal">
+    <span class="close">&times;</span>
+    <img class="modal-content" id="imgModal">
+  </div>
+
+  <script>
+    // Fonction pour formater la date au format YYYY-MM-DD
+    function formatDate(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    // Fonction pour formater l'heure au format HH:MM
+    function formatTime(date) {
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${hours}:${minutes}`;
+    }
+
+    // Définir les valeurs par défaut des champs date et heure
+    function setDefaultDateTime() {
+      const now = new Date();
+      const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+
+      document.getElementById("start_date").value = formatDate(now);
+      document.getElementById("start_time").value = formatTime(now);
+      document.getElementById("end_date").value = formatDate(now);
+      document.getElementById("end_time").value = formatTime(oneHourLater);
+    }
+
+    // Exécuter au chargement de la page
+    document.addEventListener("DOMContentLoaded", setDefaultDateTime);
+
+    // Fonction pour afficher le genre de l'article
+    function getGenre(genreCode) {
+      switch(genreCode) {
+        case 0:
+          return 'Homme';
+        case 1:
+          return 'Femme';
+        case 2:
+          return 'Enfant';
+        default:
+          return 'Inconnu';
+      }
+    }
+
+    // Gérer la soumission du formulaire
+    document.getElementById("searchForm").addEventListener("submit", async function (event) {
+      event.preventDefault();
+
+      const start_date = document.getElementById("start_date").value;
+      const start_time = document.getElementById("start_time").value;
+      const end_date = document.getElementById("end_date").value;
+      const end_time = document.getElementById("end_time").value;
+      console.log({ start_date, start_time, end_date, end_time });
+
+      const response = await fetch('http://localhost:8080/api/rechercher', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          start_date,
+          start_time,
+          end_date,
+          end_time
+        })
+      });
+
+      const data = await response.json();
+      const articleList = document.getElementById("articleList");
+      articleList.innerHTML = ''; // Réinitialiser la liste des vélos
+
+      if (response.ok) {
+        // Ajouter les vélos disponibles au tableau
+        data.forEach(article => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${article.ref_magasin}</td>
+            <td>${article.designation}</td>
+            <td>${getGenre(article.type_genre)}</td>
+            <td>${article.etat}</td>
+            <td>${article.magasin_id}</td>
+            <td>
+              <img src="data:image/jpeg;base64,${article.photo}" alt="Vélo photo" width="50" class="img-thumbnail" onclick="openModal('${article.photo}')"/>
+            </td>
+            <td>
+              ${article.qrcode ? `<img src="data:image/png;base64,${article.qrcode}" alt="QR Code" width="50" />` : 'Aucun QR Code'}
+            </td>
+          `;
+          articleList.appendChild(row);
+        });
+      } else {
+        // Afficher un message d'erreur
+        articleList.innerHTML = `<tr><td colspan="7">${data.message}</td></tr>`;
+      }
+    });
+
+    // Ouvrir la modale pour afficher l'image en grand
+    function openModal(photoBase64) {
+      const modal = document.getElementById("myModal");
+      const modalImg = document.getElementById("imgModal");
+      modal.style.display = "block";
+      modalImg.src = `data:image/jpeg;base64,${photoBase64}`;
+
+      // Lorsque l'utilisateur clique sur "X", fermer la modale
+      document.querySelector(".close").onclick = function() {
+        modal.style.display = "none";
+      }
+
+      // Fermer la modale lorsque l'utilisateur clique en dehors de l'image
+      window.onclick = function(event) {
+        if (event.target === modal) {
+          modal.style.display = "none";
+        }
+      }
+    }
+  </script>
+</body>
+</html>
+
