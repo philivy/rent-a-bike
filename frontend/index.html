@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bienvenue à Rent-a-Bike</title>
   <style>
+    /* Styles existants */
     body {
       font-family: Arial, sans-serif;
       text-align: center;
@@ -26,12 +27,12 @@
     input[type="email"],
     input[type="password"],
     input[type="text"] {
-      width: 100%; /* Les champs de saisie prennent toute la largeur */
+      width: 100%;
       padding: 13px;
       font-size: 16px;
       border: 1px solid #ccc;
       border-radius: 25px;
-      margin: 0 auto 15px; /* Centrer les champs et espacer du bas */
+      margin: 0 auto 15px;
       box-sizing: border-box;
     }
 
@@ -45,8 +46,8 @@
       cursor: pointer;
       transition: 0.3s;
       margin-top: 10px;
-      width: 50%; /* Réduire la largeur du bouton à 50% */
-      align-self: center; /* Centrer le bouton */
+      width: 50%;
+      align-self: center;
     }
 
     button:hover {
@@ -62,6 +63,47 @@
     .hidden {
       display: none;
     }
+
+    /* Nouveaux styles pour le bouton jaune et la pop-up */
+    .help-button {
+      background-color: #ffcc00;
+      color: black;
+      font-size: 21px;
+      padding: 13px;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      margin-left: 10px;
+      width: 50px; /* Largeur fixe pour le bouton d'aide */
+    }
+
+    .popup {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+    }
+
+    .popup p {
+      margin: 0;
+    }
+
+    .overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+    }
   </style>
 </head>
 <body>
@@ -75,7 +117,7 @@
         <input type="text" name="prenom" id="prenom" placeholder="Prénom" />
       </div>
       <div>
-        <input type="text" name="magasin_id" id="magasin_id" placeholder="Magasin ID" readonly value="4" />
+        <input type="text" name="magasin_id" id="magasin_id" placeholder="Magasin ID" readonly value="1" />
       </div>
     </div>
     <div>
@@ -87,16 +129,28 @@
     <div>
       <input type="password" name="password" placeholder="Mot de passe" id="passwordInput" required />
     </div>
-    <button type="submit" id="submitButton">Se connecter</button>
+    <div style="display: flex; justify-content: center;">
+      <button type="submit" id="submitButton">Se connecter</button>
+      <button type="button" class="help-button" id="helpButton">?</button>
+    </div>
   </form>
 
+  <!-- Pop-up et overlay -->
+  <div class="overlay" id="overlay"></div>
+  <div class="popup" id="popup">
+    <p>Tu n'es pas abonné : saisis quand même un email et un mot de passe.<br>
+    Le bouton "Se connecter" va changer en "S'abonner".<br>
+    Bonne inscription et connexion !</p>
+    <button type="button" onclick="closePopup()">Fermer</button>
+  </div>
+
   <script>
+    // Fonctions existantes
     document.getElementById("clientForm").addEventListener("submit", function (event) {
-      event.preventDefault(); // Empêche le rechargement de la page
-      resetErrors(); // Réinitialise les erreurs
+      event.preventDefault();
+      resetErrors();
       const submitButton = document.getElementById("submitButton");
 
-      // Vérifier si l'action est "subscribe" ou "login"
       if (submitButton.dataset.action === "subscribe") {
         subscribe();
       } else {
@@ -129,7 +183,7 @@
           document.getElementById("emailNotFoundError").style.display = "block";
           document.getElementById("submitButton").textContent = "S'abonner";
           document.getElementById("submitButton").dataset.action = "subscribe";
-          showExtraFields(); // Afficher les champs supplémentaires ici
+          showExtraFields();
         } else if (data.error === "Mot de passe incorrect") {
           document.getElementById("emailNotFoundError").style.display = "block";
         } else {
@@ -145,7 +199,6 @@
       const prenom = document.getElementById("prenom").value;
       const magasinId = document.getElementById("magasin_id").value;
 
-      // Vérifier que les champs obligatoires sont remplis
       if (!nom || !prenom) {
         alert("Veuillez remplir tous les champs obligatoires.");
         return;
@@ -176,7 +229,18 @@
         alert("Une erreur est survenue");
       });
     }
+
+    // Nouvelle fonction pour afficher la pop-up
+    document.getElementById("helpButton").addEventListener("click", function () {
+      document.getElementById("popup").style.display = "block";
+      document.getElementById("overlay").style.display = "block";
+    });
+
+    // Fonction pour fermer la pop-up
+    function closePopup() {
+      document.getElementById("popup").style.display = "none";
+      document.getElementById("overlay").style.display = "none";
+    }
   </script>
 </body>
 </html>
-

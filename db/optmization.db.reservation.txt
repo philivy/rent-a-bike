@@ -1,0 +1,28 @@
+optmization db.reservation
+-- Activer l'extension nécessaire pour la contrainte d'exclusion
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+
+-- Table pour les réservations
+CREATE TABLE reservation (
+    id SERIAL PRIMARY KEY,
+    client_id INTEGER REFERENCES client(id) ON DELETE CASCADE,
+    article_id INTEGER REFERENCES article(id) ON DELETE SET NULL,
+    start_date TIMESTAMP NOT NULL,
+    end_date TIMESTAMP NOT NULL,
+    commentaire TEXT,
+    etat INTEGER DEFAULT 0 CHECK (etat IN (0, 1, 2)), -- 0: en cours, 1: annulée, 2: archivée
+    magasin_id INTEGER REFERENCES magasin_location(id) ON DELETE SET NULL,
+    CHECK (start_date < end_date) -- Vérifie que la date de début est avant la fin
+);
+
+-- 🚲 Empêcher la double réservation d'un même article sur une période qui se chevauche
+CREATE INDEX idx_reservation_article ON reservation (article_id);
+CREATE INDEX idx_reservation_dates ON reservation (start_date, end_date);
+
+ALTER TABLE reservation
+ADD CONSTRAINT reservation_overlap_check
+EXCLUDE USING GIST (
+    article_id WITH =,
+    daterange(start_date, end_date, '[]') WITH &&
+) WHERE (article_id IS NOT NULL AND etat = 0);
+

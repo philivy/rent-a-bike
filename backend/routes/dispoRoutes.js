@@ -27,9 +27,12 @@ router.post('/rechercher', async (req, res) => {
     const endDateTime = `${end_date} ${end_time}:00`;
 
     const query = `
-      SELECT a.id, a.ref_magasin, a.designation, a.type_genre, a.type_categorie, 
-             a.description, a.etat, a.photo, a.qrcode
+      SELECT a.id, a.ref_magasin, a.designation, 
+             a.description, a.etat, a.photo, a.qrcode,
+             s1.list_raw AS sexe, s2.list_raw AS propulsion
       FROM article a
+      LEFT JOIN system.mylist s1 ON a.sexe_id = s1.id AND s1.list_entete = 'Sexe'
+      LEFT JOIN system.mylist s2 ON a.propulsion_id = s2.id AND s2.list_entete = 'Propulsion'
       WHERE a.disponible = TRUE
       AND NOT EXISTS (
         SELECT 1
@@ -62,6 +65,6 @@ router.post('/rechercher', async (req, res) => {
   }
 });
 
-//ne pas oublier 
-module.exports = router; // ✅ Export correct
+// ✅ Export correct
+module.exports = router;
 

@@ -7,44 +7,58 @@
   <link rel="stylesheet" href="dispo.css">
   <style>
     /* Style pour la modale */
-    #myModal {
-      display: none; /* Masqué par défaut */
-      position: fixed;
-      z-index: 1; /* Au-dessus du reste */
-      padding-top: 100px;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      overflow: auto;
-      background-color: rgb(0, 0, 0);
-      background-color: rgba(0, 0, 0, 0.9); /* Fond sombre */
+    .modal {
+        display: none; /* Masquer par défaut */
+        position: fixed; /* Rester en place */
+        z-index: 1000; /* Au-dessus de tout */
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto; /* Activer le défilement si nécessaire */
+        background-color: rgba(0, 0, 0, 0.9); /* Fond sombre */
     }
 
-    /* Modale image */
     .modal-content {
-      margin: auto;
-      display: block;
-      width: 80%;
-      max-width: 700px;
+        margin: auto;
+        display: block;
+        max-width: 80%; /* Limiter la largeur */
+        max-height: 80vh; /* Limiter la hauteur */
+        width: auto;
+        height: auto;
     }
 
-    /* Fermer le bouton */
     .close {
-      position: absolute;
-      top: 15px;
-      right: 35px;
-      color: #f1f1f1;
-      font-size: 40px;
-      font-weight: bold;
-      transition: 0.3s;
+        position: absolute;
+        top: 20px;
+        right: 35px;
+        color: #f1f1f1;
+        font-size: 40px;
+        font-weight: bold;
+        transition: 0.3s;
+        cursor: pointer;
     }
 
     .close:hover,
     .close:focus {
-      color: #bbb;
-      text-decoration: none;
-      cursor: pointer;
+        color: #bbb;
+        text-decoration: none;
+    }
+
+    /* Autres styles */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        padding: 10px;
+        border: 1px solid #ddd;
+        text-align: left;
+    }
+
+    img {
+        cursor: pointer;
     }
   </style>
 </head>
@@ -66,21 +80,33 @@
       </div>
       <button type="submit">Rechercher</button>
     </form>
-    
+
     <table>
       <thead>
         <tr>
           <th>Référence</th>
           <th>Désignation</th>
-          <th>Genre</th>
-          <th>Etat</th>
-          <th>Magasin</th>
+          <th>
+            Sexe
+            <select id="filterSexe">
+              <option value="">Tous</option>
+              <!-- Options générées dynamiquement -->
+            </select>
+          </th>
+          <th>
+            Propulsion 
+            <select id="filterPropulsion">
+              <option value="">Toutes</option>
+              <!-- Options générées dynamiquement -->
+            </select>
+          </th>
+          <th>Description</th>
           <th>Photo</th>
           <th>QR Code</th>
         </tr>
       </thead>
       <tbody id="articleList">
-        <!-- Les vélos disponibles seront ajoutés ici -->
+        <!-- Liste des vélos -->
       </tbody>
     </table>
 
@@ -91,126 +117,192 @@
 
   <!-- Modale pour l'image -->
   <div id="myModal" class="modal">
-    <span class="close">&times;</span>
+    <span class="close" id="closeImage">&times;</span>
     <img class="modal-content" id="imgModal">
   </div>
 
+  <!-- Modale pour le QR Code -->
+  <div id="qrModal" class="modal">
+    <span class="close" id="closeQR">&times;</span>
+    <img class="modal-content" id="qrModalImg">
+  </div>
+
   <script>
-    // Fonction pour formater la date au format YYYY-MM-DD
-    function formatDate(date) {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    }
+    // Déclarer les fonctions globalement
+    function openModal(imageUrl) {
+        const modal = document.getElementById("myModal");
+        const modalImg = document.getElementById("imgModal");
+        modal.style.display = "block";
+        modalImg.src = imageUrl;
 
-    // Fonction pour formater l'heure au format HH:MM
-    function formatTime(date) {
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      return `${hours}:${minutes}`;
-    }
-
-    // Définir les valeurs par défaut des champs date et heure
-    function setDefaultDateTime() {
-      const now = new Date();
-      const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
-
-      document.getElementById("start_date").value = formatDate(now);
-      document.getElementById("start_time").value = formatTime(now);
-      document.getElementById("end_date").value = formatDate(now);
-      document.getElementById("end_time").value = formatTime(oneHourLater);
-    }
-
-    // Exécuter au chargement de la page
-    document.addEventListener("DOMContentLoaded", setDefaultDateTime);
-
-    // Fonction pour afficher le genre de l'article
-    function getGenre(genreCode) {
-      switch(genreCode) {
-        case 0:
-          return 'Homme';
-        case 1:
-          return 'Femme';
-        case 2:
-          return 'Enfant';
-        default:
-          return 'Inconnu';
-      }
-    }
-
-    // Gérer la soumission du formulaire
-    document.getElementById("searchForm").addEventListener("submit", async function (event) {
-      event.preventDefault();
-
-      const start_date = document.getElementById("start_date").value;
-      const start_time = document.getElementById("start_time").value;
-      const end_date = document.getElementById("end_date").value;
-      const end_time = document.getElementById("end_time").value;
-      console.log({ start_date, start_time, end_date, end_time });
-
-      const response = await fetch('http://localhost:8080/api/rechercher', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          start_date,
-          start_time,
-          end_date,
-          end_time
-        })
-      });
-
-      const data = await response.json();
-      const articleList = document.getElementById("articleList");
-      articleList.innerHTML = ''; // Réinitialiser la liste des vélos
-
-      if (response.ok) {
-        // Ajouter les vélos disponibles au tableau
-        data.forEach(article => {
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td>${article.ref_magasin}</td>
-            <td>${article.designation}</td>
-            <td>${getGenre(article.type_genre)}</td>
-            <td>${article.etat}</td>
-            <td>${article.magasin_id}</td>
-            <td>
-              <img src="data:image/jpeg;base64,${article.photo}" alt="Vélo photo" width="50" class="img-thumbnail" onclick="openModal('${article.photo}')"/>
-            </td>
-            <td>
-              ${article.qrcode ? `<img src="data:image/png;base64,${article.qrcode}" alt="QR Code" width="50" />` : 'Aucun QR Code'}
-            </td>
-          `;
-          articleList.appendChild(row);
-        });
-      } else {
-        // Afficher un message d'erreur
-        articleList.innerHTML = `<tr><td colspan="7">${data.message}</td></tr>`;
-      }
-    });
-
-    // Ouvrir la modale pour afficher l'image en grand
-    function openModal(photoBase64) {
-      const modal = document.getElementById("myModal");
-      const modalImg = document.getElementById("imgModal");
-      modal.style.display = "block";
-      modalImg.src = `data:image/jpeg;base64,${photoBase64}`;
-
-      // Lorsque l'utilisateur clique sur "X", fermer la modale
-      document.querySelector(".close").onclick = function() {
-        modal.style.display = "none";
-      }
-
-      // Fermer la modale lorsque l'utilisateur clique en dehors de l'image
-      window.onclick = function(event) {
-        if (event.target === modal) {
-          modal.style.display = "none";
+        // Fermer la modale lors d'un clic sur l'image
+        modalImg.onclick = function() {
+            modal.style.display = "none";
         }
-      }
     }
+
+    function openQRModal(qrCodeUrl) {
+        const modal = document.getElementById("qrModal");
+        const modalImg = document.getElementById("qrModalImg");
+        modal.style.display = "block";
+        modalImg.src = qrCodeUrl;
+
+        // Fermer la modale lors d'un clic sur l'image
+        modalImg.onclick = function() {
+            modal.style.display = "none";
+        }
+    }
+
+    // Déclarer les gestionnaires d'événements globalement
+    document.getElementById("closeImage").onclick = function() {
+        const modal = document.getElementById("myModal");
+        modal.style.display = "none";
+    }
+
+    document.getElementById("closeQR").onclick = function() {
+        const modal = document.getElementById("qrModal");
+        modal.style.display = "none";
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        let allArticles = []; // Variable pour stocker les articles récupérés
+
+        // 1. Fonction pour formater une date au format YYYY-MM-DD
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // 2. Fonction pour formater une heure au format HH:MM
+        function formatTime(date) {
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${hours}:${minutes}`;
+        }
+
+        // 3. Définir les valeurs par défaut pour les dates et heures
+        const now = new Date();
+        const endTime = new Date(now);
+        endTime.setHours(now.getHours() + 1);
+
+        const startDateInput = document.getElementById("start_date");
+        const startTimeInput = document.getElementById("start_time");
+        const endDateInput = document.getElementById("end_date");
+        const endTimeInput = document.getElementById("end_time");
+
+        startDateInput.value = formatDate(now);
+        startTimeInput.value = formatTime(now);
+        endDateInput.value = formatDate(now);
+        endTimeInput.value = formatTime(endTime);
+
+        // 4. Gérer la soumission du formulaire
+        const searchForm = document.getElementById("searchForm");
+        searchForm.addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            const startDate = startDateInput.value;
+            const startTime = startTimeInput.value;
+            const endDate = endDateInput.value;
+            const endTime = endTimeInput.value;
+
+            try {
+                const response = await fetch('http://localhost:8080/api/rechercher', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        start_date: startDate,
+                        start_time: startTime,
+                        end_date: endDate,
+                        end_time: endTime
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP: ${response.status}`);
+                }
+
+                allArticles = await response.json();
+                console.log("Données reçues :", allArticles); // Vérifiez les données dans la console
+                updateFilters(); // Mettre à jour les filtres
+                updateTable(); // Mettre à jour le tableau
+            } catch (error) {
+                console.error("Erreur lors de la récupération des articles:", error);
+                alert("Une erreur s'est produite lors de la récupération des articles. Veuillez réessayer.");
+            }
+        });
+
+        // 5. Fonction pour extraire les valeurs uniques d'une propriété
+        function getUniqueValues(articles, property) {
+            const values = articles.map(article => article[property]); // Extraire les valeurs
+            return [...new Set(values)]; // Retourner les valeurs uniques
+        }
+
+        // 6. Fonction pour mettre à jour les filtres
+        function updateFilters() {
+            const sexFilter = document.getElementById("filterSexe");
+            const propulsionFilter = document.getElementById("filterPropulsion");
+
+            // Extraire les valeurs uniques pour "sexe" et "propulsion"
+            const uniqueSexes = getUniqueValues(allArticles, "sexe");
+            const uniquePropulsions = getUniqueValues(allArticles, "propulsion");
+
+            // Générer les options pour le filtre "Sexe"
+            sexFilter.innerHTML = `
+                <option value="">Tous</option>
+                ${uniqueSexes.map(sex => `<option value="${sex}">${sex}</option>`).join('')}
+            `;
+
+            // Générer les options pour le filtre "Propulsion"
+            propulsionFilter.innerHTML = `
+                <option value="">Toutes</option>
+                ${uniquePropulsions.map(propulsion => `<option value="${propulsion}">${propulsion}</option>`).join('')}
+            `;
+        }
+
+        // 7. Fonction pour mettre à jour le tableau
+        function updateTable() {
+            const sexFilter = document.getElementById("filterSexe").value;
+            const propulsionFilter = document.getElementById("filterPropulsion").value;
+
+            const filteredArticles = allArticles.filter(article =>
+                (sexFilter === "" || article.sexe === sexFilter) &&
+                (propulsionFilter === "" || article.propulsion === propulsionFilter)
+            );
+
+            const articleList = document.getElementById("articleList");
+
+            if (filteredArticles.length === 0) {
+                articleList.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center;">Aucun article trouvé.</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            articleList.innerHTML = filteredArticles.map(article => `
+                <tr>
+                    <td>${article.ref_magasin}</td>
+                    <td>${article.designation}</td>
+                    <td>${article.sexe}</td>
+                    <td>${article.propulsion}</td>
+                    <td>${article.description}</td>
+                    <td>
+                        ${article.photo ? `<img src="data:image/jpeg;base64,${article.photo}" alt="Photo" style="width: 100px;" onclick="openModal('data:image/jpeg;base64,${article.photo}')">` : 'Aucune photo'}
+                    </td>
+                    <td>
+                        ${article.qrcode ? `<img src="data:image/png;base64,${article.qrcode}" alt="QR Code" style="width: 100px;" onclick="openQRModal('data:image/png;base64,${article.qrcode}')">` : 'Aucun QR Code'}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // 8. Gérer les changements de filtre
+        document.getElementById("filterSexe").addEventListener("change", updateTable);
+        document.getElementById("filterPropulsion").addEventListener("change", updateTable);
+    });
   </script>
 </body>
 </html>
-
