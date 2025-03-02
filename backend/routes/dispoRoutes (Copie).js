@@ -27,16 +27,28 @@ router.post('/rechercher', async (req, res) => {
     const endDateTime = `${end_date} ${end_time}:00`;
 
     const query = `
-      SELECT a.id, a.ref_magasin, a.designation, a.sexe, a.propulsion, 
-             a.description, a.etat, a.photo, a.qrcode
+      SELECT 
+          a.id, 
+          a.ref_magasin, 
+          a.designation, 
+          a.description, 
+          a.etat, 
+          a.photo, 
+          a.qrcode,
+          a.sexe, 
+          a.propulsion,
+          t.prix_horaire, 
+          t.prix_demi_journee, 
+          t.prix_journee
       FROM article a
+      JOIN tarif t ON a.tarif_id = t.id
       WHERE a.disponible = TRUE
       AND NOT EXISTS (
-        SELECT 1
-        FROM reservation r
-        WHERE r.article_id = a.id
-        AND (r.start_date, r.end_date) OVERLAPS ($1::timestamp, $2::timestamp)
-        AND r.etat = 0
+          SELECT 1
+          FROM reservation r
+          WHERE r.article_id = a.id
+          AND (r.start_date, r.end_date) OVERLAPS ($1::timestamp, $2::timestamp)
+          AND r.status = 'En cours'
       )
     `;
 
@@ -61,7 +73,6 @@ router.post('/rechercher', async (req, res) => {
     res.status(500).json({ message: 'Erreur lors de la recherche d\'articles.' });
   }
 });
-
 //ne pas oublier 
 module.exports = router; // ✅ Export correct
 

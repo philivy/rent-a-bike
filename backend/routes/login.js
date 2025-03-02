@@ -32,6 +32,44 @@ pool.query('SELECT NOW()', (err, res) => {
 //////////////////////////////////////////
 // Route de connexion
 
+router.post('/checkEmail', async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    console.log("❌ Erreur : Email requis");
+    return res.status(400).json({ error: "Email requis !" });
+  }
+
+  if (!validator.isEmail(email)) {
+    console.log("❌ Erreur : Format d'email invalide");
+    return res.status(400).json({ error: "Format d'email invalide" });
+  }
+
+  console.log(`🔍 Vérification de l'existence de l'email : ${email}`);
+
+  try {
+    const query = "SELECT COUNT(*) AS total FROM client WHERE email = $1";
+    const result = await pool.query(query, [email]);
+
+    console.log("📌 Résultat de la requête checkemail :", result.rows);
+
+    const emailExists = parseInt(result.rows[0].total, 10) > 0;
+
+    if (emailExists) {
+      console.log("⚠️ Email déjà utilisé");
+      return res.json({ exists: true, message: "Email déjà utilisé" });
+    } else {
+      console.log("✅ Email disponible");
+      return res.json({ exists: false, message: "Email disponible" });
+    }
+  } catch (err) {
+    console.error("🔥 Erreur lors de la vérification de l'email :", err);
+    return res.status(500).json({ error: "Erreur interne du serveur" });
+  }
+});
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 

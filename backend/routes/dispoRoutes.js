@@ -27,23 +27,37 @@ router.post('/rechercher', async (req, res) => {
     const endDateTime = `${end_date} ${end_time}:00`;
 
     const query = `
-      SELECT a.id, a.ref_magasin, a.designation, 
-             a.description, a.etat, a.photo, a.qrcode,
-             s1.list_raw AS sexe, s2.list_raw AS propulsion
+      SELECT 
+          a.id, 
+          a.ref_magasin, 
+          a.designation, 
+          a.description, 
+          a.etat, 
+          a.photo, 
+          a.qrcode,
+          a.sexe, 
+          a.propulsion,
+          t.prix_horaire, 
+          t.prix_demi_journee, 
+          t.prix_journee
       FROM article a
-      LEFT JOIN system.mylist s1 ON a.sexe_id = s1.id AND s1.list_entete = 'Sexe'
-      LEFT JOIN system.mylist s2 ON a.propulsion_id = s2.id AND s2.list_entete = 'Propulsion'
+      JOIN tarif t ON a.tarif_id = t.id
       WHERE a.disponible = TRUE
       AND NOT EXISTS (
-        SELECT 1
-        FROM reservation r
-        WHERE r.article_id = a.id
-        AND (r.start_date, r.end_date) OVERLAPS ($1::timestamp, $2::timestamp)
-        AND r.etat = 0
+          SELECT 1
+          FROM reservation r
+          WHERE r.article_id = a.id
+          AND (r.start_date, r.end_date) OVERLAPS ($1::timestamp, $2::timestamp)
+          AND r.status = 'En cours'
       )
     `;
 
+    console.log("📋 Requête SQL exécutée :", query); // Affiche la requête SQL
+    console.log("📅 Paramètres de la requête :", [startDateTime, endDateTime]); // Affiche les paramètres
+
     const result = await pool.query(query, [startDateTime, endDateTime]);
+
+    console.log("📊 Données extraites de la base de données :", result.rows); // Affiche les données brutes
 
     if (result.rows.length > 0) {
       const articles = result.rows.map(article => {
@@ -55,8 +69,11 @@ router.post('/rechercher', async (req, res) => {
         };
       });
 
+      console.log("🖼️ Articles après transformation :", articles); // Affiche les articles transformés
+
       res.json(articles);
     } else {
+      console.log("🔍 Aucun article trouvé pour les dates spécifiées."); // Affiche un message si aucun article n'est trouvé
       res.status(404).json({ message: 'Rien de disponible pour ces dates.' });
     }
   } catch (error) {
@@ -65,6 +82,5 @@ router.post('/rechercher', async (req, res) => {
   }
 });
 
-// ✅ Export correct
-module.exports = router;
-
+// Ne pas oublier
+module.exports = router; // ✅ Export correct

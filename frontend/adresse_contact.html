@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gestion des Adresses</title>
   <style>
-    /* Styles généraux pour la page */
     body {
       font-family: Arial, sans-serif;
       background-color: #f4f4f4;
@@ -17,14 +16,10 @@
       justify-content: center;
       align-items: center;
     }
-
-    /* Style du titre principal */
     h1 {
       text-align: center;
       margin-bottom: 20px;
     }
-
-    /* Style du formulaire */
     form {
       background: #e6f7e6;
       width: 400px;
@@ -35,36 +30,40 @@
       flex-direction: column;
       justify-content: center;
     }
-
-    /* Style des champs du formulaire */
     .field {
       display: flex;
       flex-direction: column;
       margin-bottom: 15px;
     }
-
+    .field.phone-group {
+      flex-direction: row;
+      gap: 10px;
+      align-items: center;
+    }
     .field input,
     .field select {
       padding: 8px;
       border: 1px solid #ccc;
       border-radius: 5px;
-      width: 100%;
       background-color: #f0f0f0;
     }
-
     .field input::placeholder,
     .field select::placeholder {
       color: #aaa;
     }
-
-    /* Style des boutons de navigation */
+    .field select#phoneCode {
+      width: 100px;
+    }
+    .field input#telephone {
+      flex: 1;
+    }
     .navigation-buttons {
       display: flex;
       justify-content: center;
       gap: 10px;
       margin: 20px 0;
+      position: relative;
     }
-
     .nav-button {
       font-size: 16px;
       padding: 8px 12px;
@@ -75,12 +74,9 @@
       cursor: pointer;
       transition: 0.3s;
     }
-
     .nav-button:hover {
       background-color: #0056b3;
     }
-
-    /* Style du bouton de soumission */
     button[type="submit"] {
       font-size: 16px;
       background-color: #28a745;
@@ -93,12 +89,9 @@
       display: block;
       margin: 0 auto;
     }
-
     button[type="submit"]:hover {
       background-color: #218838;
     }
-
-    /* Style des messages d'erreur */
     .error-message {
       color: red;
       font-size: 14px;
@@ -106,8 +99,13 @@
       text-align: center;
       margin-top: 10px;
     }
-
-    /* Style du bouton "Louer" */
+    .success-message {
+      color: green;
+      font-size: 14px;
+      display: none;
+      text-align: center;
+      margin-top: 10px;
+    }
     #louerButton {
       font-size: 18px;
       background-color: pink;
@@ -119,107 +117,205 @@
       cursor: pointer;
       transition: 0.3s;
       display: block;
+      position: absolute;
+      right: 10px;
+      top: 0;
     }
-
     #louerButton:hover {
       background-color: #e6007e;
-    }
-
-    /* Positionnement du bouton "Louer" */
-    .navigation-buttons {
-      position: relative;
-    }
-
-    #louerButton {
-      position: absolute;
-      right: 10px; /* Positionné 10px à droite */
-      top: 0; /* Aligné verticalement avec les autres boutons */
     }
   </style>
 </head>
 <body>
   <h1>Gestion des Adresses</h1>
   <form id="addressForm">
-    <!-- Champ pour l'ID client (lecture seule) -->
     <div class="field">
       <input type="text" id="client_id" name="client_id" readonly placeholder="ID client"/>
     </div>
-    <!-- Champ pour l'ID adresse (lecture seule) -->
     <div class="field">
       <input type="text" id="id" name="id" readonly placeholder="ID adresse"/>
     </div>
-    <!-- Champ pour la rue -->
     <div class="field">
-      <input type="text" id="rue" name="rue" required placeholder="Entrez la rue"/>
+      <input type="text" id="rue" name="rue" autocomplete="street-address" required placeholder="Entrez la rue"/>
     </div>
-    <!-- Champ pour l'étage -->
     <div class="field">
       <input type="text" id="etage" name="etage" placeholder="Entrez l'étage"/>
     </div>
-    <!-- Champ pour la résidence -->
     <div class="field">
-      <input type="text" id="residence" name="residence" placeholder="Entrez la résidence"/>
+      <input type="text" id="residence" name="residence" autocomplete="street-address2" placeholder="Entrez la résidence"/>
     </div>
-    <!-- Champ pour la ville -->
     <div class="field">
       <input type="text" id="ville" name="ville" required placeholder="Entrez la ville"/>
     </div>
-    <!-- Champ pour le code postal -->
     <div class="field">
-      <input type="text" id="code_postal" name="code_postal" required placeholder="Entrez le code postal"/>
+      <input type="text" id="code_postal" name="code_postal" autocomplete="postal-code" required placeholder="Entrez le code postal"/>
     </div>
-    <!-- Champ pour le pays -->
     <div class="field">
-      <input type="text" id="pays" name="pays" required placeholder="Entrez le pays"/>
+      <select id="pays" name="pays" required>
+        <option value="" disabled selected>Sélectionnez un pays</option>
+        <optgroup label="Favoris">
+          <option value="DE">Allemagne</option>
+          <option value="AT">Autriche</option>
+          <option value="BE">Belgique</option>
+          <option value="CN">Chine</option>
+          <option value="KR">Corée du Sud</option>
+          <option value="US">États-Unis</option>
+          <option value="FR">France</option>
+          <option value="IT">Italie</option>
+          <option value="JP">Japon</option>
+          <option value="NL">Pays-Bas</option>
+          <option value="GB">Royaume-Uni</option>
+          <option value="CH">Suisse</option>
+        </optgroup>
+        <optgroup label="Autres pays" id="otherCountries">
+          <!-- Rempli dynamiquement par JavaScript -->
+        </optgroup>
+      </select>
     </div>
-    <!-- Champ pour le téléphone -->
-    <div class="field">
+    <div class="field phone-group">
+      <select id="phoneCode" name="phoneCode">
+        <option value="">Aucun</option>
+        <option value="+49">+49 (DE)</option>
+        <option value="+43">+43 (AT)</option>
+        <option value="+32">+32 (BE)</option>
+        <option value="+86">+86 (CN)</option>
+        <option value="+82">+82 (KR)</option>
+        <option value="+1">+1 (US)</option>
+        <option value="+33">+33 (FR)</option>
+        <option value="+39">+39 (IT)</option>
+        <option value="+81">+81 (JP)</option>
+        <option value="+31">+31 (NL)</option>
+        <option value="+44">+44 (GB)</option>
+        <option value="+41">+41 (CH)</option>
+      </select>
       <input type="text" id="telephone" name="telephone" required placeholder="Entrez le téléphone"/>
     </div>
-    <!-- Champ pour le type d'adresse -->
     <div class="field">
       <select id="type_adresse" name="type_adresse" required>
+        <option value="" disabled selected>Sélectionnez un type</option>
         <option value="0">Personnel</option>
         <option value="1">Facture</option>
         <option value="2">Autre</option>
       </select>
     </div>
-
-    <!-- Boutons de navigation -->
     <div class="navigation-buttons">
       <button type="button" class="nav-button" id="prevButton"><<<</button>
       <button type="button" class="nav-button" id="nextButton">>>></button>
-      <!-- Bouton "Louer" pour rediriger vers dispo.html -->
       <button type="button" id="louerButton" onclick="redirectToDispo()" style="display: none;">Louer</button>
     </div>
-
-    <!-- Bouton de soumission du formulaire -->
     <button type="submit">Soumettre</button>
-    <!-- Message d'erreur -->
     <div id="error-message" class="error-message"></div>
+    <div id="success-message" class="success-message"></div>
   </form>
 
   <script>
-    // Fonction pour rediriger vers dispo.html avec le client_id
+    const favoriteCountries = {
+      "DE": { name: "Allemagne", phoneCode: "+49" },
+      "AT": { name: "Autriche", phoneCode: "+43" },
+      "BE": { name: "Belgique", phoneCode: "+32" },
+      "CN": { name: "Chine", phoneCode: "+86" },
+      "KR": { name: "Corée du Sud", phoneCode: "+82" },
+      "US": { name: "États-Unis", phoneCode: "+1" },
+      "FR": { name: "France", phoneCode: "+33" },
+      "IT": { name: "Italie", phoneCode: "+39" },
+      "JP": { name: "Japon", phoneCode: "+81" },
+      "NL": { name: "Pays-Bas", phoneCode: "+31" },
+      "GB": { name: "Royaume-Uni", phoneCode: "+44" },
+      "CH": { name: "Suisse", phoneCode: "+41" }
+    };
+
+    const allCountries = [
+      { code: "AF", name: "Afghanistan" }, { code: "AL", name: "Albanie" }, { code: "DZ", name: "Algérie" },
+      { code: "AD", name: "Andorre" }, { code: "AO", name: "Angola" }, { code: "AG", name: "Antigua-et-Barbuda" },
+      { code: "AR", name: "Argentine" }, { code: "AM", name: "Arménie" }, { code: "AU", name: "Australie" },
+      { code: "AT", name: "Autriche" }, { code: "AZ", name: "Azerbaïdjan" }, { code: "BS", name: "Bahamas" },
+      { code: "BH", name: "Bahreïn" }, { code: "BD", name: "Bangladesh" }, { code: "BB", name: "Barbade" },
+      { code: "BY", name: "Biélorussie" }, { code: "BE", name: "Belgique" }, { code: "BZ", name: "Belize" },
+      { code: "BJ", name: "Bénin" }, { code: "BT", name: "Bhoutan" }, { code: "BO", name: "Bolivie" },
+      { code: "BA", name: "Bosnie-Herzégovine" }, { code: "BW", name: "Botswana" }, { code: "BR", name: "Brésil" },
+      { code: "BN", name: "Brunei" }, { code: "BG", name: "Bulgarie" }, { code: "BF", name: "Burkina Faso" },
+      { code: "BI", name: "Burundi" }, { code: "KH", name: "Cambodge" }, { code: "CM", name: "Cameroun" },
+      { code: "CA", name: "Canada" }, { code: "CV", name: "Cap-Vert" }, { code: "CF", name: "Centrafrique" },
+      { code: "TD", name: "Tchad" }, { code: "CL", name: "Chili" }, { code: "CN", name: "Chine" },
+      { code: "CO", name: "Colombie" }, { code: "KM", name: "Comores" }, { code: "CG", name: "Congo" },
+      { code: "CD", name: "Congo (RDC)" }, { code: "CR", name: "Costa Rica" }, { code: "CI", name: "Côte d'Ivoire" },
+      { code: "HR", name: "Croatie" }, { code: "CU", name: "Cuba" }, { code: "CY", name: "Chypre" },
+      { code: "CZ", name: "Tchéquie" }, { code: "DK", name: "Danemark" }, { code: "DJ", name: "Djibouti" },
+      { code: "DM", name: "Dominique" }, { code: "DO", name: "République Dominicaine" }, { code: "EC", name: "Équateur" },
+      { code: "EG", name: "Égypte" }, { code: "SV", name: "Salvador" }, { code: "GQ", name: "Guinée équatoriale" },
+      { code: "ER", name: "Érythrée" }, { code: "EE", name: "Estonie" }, { code: "SZ", name: "Eswatini" },
+      { code: "ET", name: "Éthiopie" }, { code: "FJ", name: "Fidji" }, { code: "FI", name: "Finlande" },
+      { code: "FR", name: "France" }, { code: "GA", name: "Gabon" }, { code: "GM", name: "Gambie" },
+      { code: "GE", name: "Géorgie" }, { code: "DE", name: "Allemagne" }, { code: "GH", name: "Ghana" },
+      { code: "GR", name: "Grèce" }, { code: "GD", name: "Grenade" }, { code: "GT", name: "Guatemala" },
+      { code: "GN", name: "Guinée" }, { code: "GW", name: "Guinée-Bissau" }, { code: "GY", name: "Guyana" },
+      { code: "HT", name: "Haïti" }, { code: "HN", name: "Honduras" }, { code: "HU", name: "Hongrie" },
+      { code: "IS", name: "Islande" }, { code: "IN", name: "Inde" }, { code: "ID", name: "Indonésie" },
+      { code: "IR", name: "Iran" }, { code: "IQ", name: "Irak" }, { code: "IE", name: "Irlande" },
+      { code: "IL", name: "Israël" }, { code: "IT", name: "Italie" }, { code: "JM", name: "Jamaïque" },
+      { code: "JP", name: "Japon" }, { code: "JO", name: "Jordanie" }, { code: "KZ", name: "Kazakhstan" },
+      { code: "KE", name: "Kenya" }, { code: "KI", name: "Kiribati" }, { code: "KP", name: "Corée du Nord" },
+      { code: "KR", name: "Corée du Sud" }, { code: "KW", name: "Koweït" }, { code: "KG", name: "Kirghizistan" },
+      { code: "LA", name: "Laos" }, { code: "LV", name: "Lettonie" }, { code: "LB", name: "Liban" },
+      { code: "LS", name: "Lesotho" }, { code: "LR", name: "Libéria" }, { code: "LY", name: "Libye" },
+      { code: "LI", name: "Liechtenstein" }, { code: "LT", name: "Lituanie" }, { code: "LU", name: "Luxembourg" },
+      { code: "MG", name: "Madagascar" }, { code: "MW", name: "Malawi" }, { code: "MY", name: "Malaisie" },
+      { code: "MV", name: "Maldives" }, { code: "ML", name: "Mali" }, { code: "MT", name: "Malte" },
+      { code: "MH", name: "Îles Marshall" }, { code: "MR", name: "Mauritanie" }, { code: "MU", name: "Maurice" },
+      { code: "MX", name: "Mexique" }, { code: "FM", name: "Micronésie" }, { code: "MD", name: "Moldavie" },
+      { code: "MC", name: "Monaco" }, { code: "MN", name: "Mongolie" }, { code: "ME", name: "Monténégro" },
+      { code: "MA", name: "Maroc" }, { code: "MZ", name: "Mozambique" }, { code: "MM", name: "Myanmar" },
+      { code: "NA", name: "Namibie" }, { code: "NR", name: "Nauru" }, { code: "NP", name: "Népal" },
+      { code: "NL", name: "Pays-Bas" }, { code: "NZ", name: "Nouvelle-Zélande" }, { code: "NI", name: "Nicaragua" },
+      { code: "NE", name: "Niger" }, { code: "NG", name: "Nigeria" }, { code: "NO", name: "Norvège" },
+      { code: "OM", name: "Oman" }, { code: "PK", name: "Pakistan" }, { code: "PW", name: "Palaos" },
+      { code: "PA", name: "Panama" }, { code: "PG", name: "Papouasie-Nouvelle-Guinée" }, { code: "PY", name: "Paraguay" },
+      { code: "PE", name: "Pérou" }, { code: "PH", name: "Philippines" }, { code: "PL", name: "Pologne" },
+      { code: "PT", name: "Portugal" }, { code: "QA", name: "Qatar" }, { code: "RO", name: "Roumanie" },
+      { code: "RU", name: "Russie" }, { code: "RW", name: "Rwanda" }, { code: "KN", name: "Saint-Kitts-et-Nevis" },
+      { code: "LC", name: "Sainte-Lucie" }, { code: "VC", name: "Saint-Vincent-et-les-Grenadines" },
+      { code: "WS", name: "Samoa" }, { code: "SM", name: "Saint-Marin" }, { code: "ST", name: "Sao Tomé-et-Principe" },
+      { code: "SA", name: "Arabie saoudite" }, { code: "SN", name: "Sénégal" }, { code: "RS", name: "Serbie" },
+      { code: "SC", name: "Seychelles" }, { code: "SL", name: "Sierra Leone" }, { code: "SG", name: "Singapour" },
+      { code: "SK", name: "Slovaquie" }, { code: "SI", name: "Slovénie" }, { code: "SB", name: "Îles Salomon" },
+      { code: "SO", name: "Somalie" }, { code: "ZA", name: "Afrique du Sud" }, { code: "ES", name: "Espagne" },
+      { code: "LK", name: "Sri Lanka" }, { code: "SD", name: "Soudan" }, { code: "SS", name: "Soudan du Sud" },
+      { code: "SR", name: "Suriname" }, { code: "SE", name: "Suède" }, { code: "CH", name: "Suisse" },
+      { code: "SY", name: "Syrie" }, { code: "TJ", name: "Tadjikistan" }, { code: "TZ", name: "Tanzanie" },
+      { code: "TH", name: "Thaïlande" }, { code: "TL", name: "Timor oriental" }, { code: "TG", name: "Togo" },
+      { code: "TO", name: "Tonga" }, { code: "TT", name: "Trinité-et-Tobago" }, { code: "TN", name: "Tunisie" },
+      { code: "TR", name: "Turquie" }, { code: "TM", name: "Turkménistan" }, { code: "TV", name: "Tuvalu" },
+      { code: "UG", name: "Ouganda" }, { code: "UA", name: "Ukraine" }, { code: "AE", name: "Émirats arabes unis" },
+      { code: "GB", name: "Royaume-Uni" }, { code: "US", name: "États-Unis" }, { code: "UY", name: "Uruguay" },
+      { code: "UZ", name: "Ouzbékistan" }, { code: "VU", name: "Vanuatu" }, { code: "VA", name: "Vatican" },
+      { code: "VE", name: "Venezuela" }, { code: "VN", name: "Vietnam" }, { code: "YE", name: "Yémen" },
+      { code: "ZM", name: "Zambie" }, { code: "ZW", name: "Zimbabwe" }
+    ];
+
     function redirectToDispo() {
-      const client_id = document.getElementById("client_id").value; // Récupère le client_id du formulaire
+      const client_id = document.getElementById("client_id").value;
       if (client_id) {
-        window.location.href = `dispo.html?client_id=${client_id}`; // Redirection avec le client_id
+        window.location.href = `dispo.html?client_id=${client_id}`;
       } else {
-        console.error("Erreur : client_id manquant."); // Affiche une erreur si le client_id est absent
-        alert("Erreur : client_id manquant."); // Affiche une alerte pour l'utilisateur
+        console.error("Erreur : client_id manquant.");
+        alert("Erreur : client_id manquant.");
       }
     }
 
-    // Lorsque le DOM est chargé, exécute ce code
     document.addEventListener("DOMContentLoaded", async function () {
-      // Récupère le client_id depuis l'URL
       const urlParams = new URLSearchParams(window.location.search);
       let client_id = urlParams.get('id_client');
       const client_idInput = document.getElementById("client_id");
       const adresse_idInput = document.getElementById("id");
+      const paysSelect = document.getElementById("pays");
+      const otherCountriesGroup = document.getElementById("otherCountries");
+      const phoneCodeSelect = document.getElementById("phoneCode");
+      const telephoneInput = document.getElementById("telephone");
+      const codePostalInput = document.getElementById("code_postal");
+      const rueInput = document.getElementById("rue");
+      const villeInput = document.getElementById("ville");
+      const typeAdresseSelect = document.getElementById("type_adresse");
 
-      // Si le client_id n'est pas dans l'URL, vérifie le formulaire
       if (!client_id) {
         client_id = client_idInput.value;
         if (!client_id) {
@@ -227,125 +323,279 @@
           return;
         }
       }
-      client_idInput.value = client_id; // Met à jour le champ client_id dans le formulaire
+      client_idInput.value = client_id;
 
-      let adresses = []; // Liste des adresses
-      let currentIndex = 0; // Index de l'adresse actuellement affichée
+      let adresses = [];
+      let currentIndex = 0;
 
-      // Met à jour le formulaire avec les données de l'adresse
+      allCountries
+        .filter(country => !Object.keys(favoriteCountries).includes(country.code))
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .forEach(country => {
+          const option = document.createElement("option");
+          option.value = country.code;
+          option.textContent = country.name;
+          otherCountriesGroup.appendChild(option);
+        });
+
+      paysSelect.addEventListener("change", () => {
+        const selectedCountry = favoriteCountries[paysSelect.value];
+        if (selectedCountry) {
+          phoneCodeSelect.value = selectedCountry.phoneCode;
+        } else {
+          phoneCodeSelect.value = "";
+        }
+        validatePostalCode();
+      });
+
+      function validatePostalCode() {
+        const postalCode = codePostalInput.value;
+        const country = paysSelect.value;
+        let isValid = true;
+        let errorMessage = "";
+
+        switch (country) {
+          case "DE":
+            isValid = /^\d{5}$/.test(postalCode) && postalCode >= "01000" && postalCode <= "99999";
+            errorMessage = "Le code postal allemand doit être 5 chiffres (01000-99999).";
+            break;
+          case "AT":
+            isValid = /^\d{4}$/.test(postalCode) && postalCode >= "1000" && postalCode <= "9999";
+            errorMessage = "Le code postal autrichien doit être 4 chiffres (1000-9999).";
+            break;
+          case "BE":
+            isValid = /^\d{4}$/.test(postalCode) && postalCode >= "1000" && postalCode <= "9999";
+            errorMessage = "Le code postal belge doit être 4 chiffres (1000-9999).";
+            break;
+          case "CN":
+            isValid = /^\d{6}$/.test(postalCode);
+            errorMessage = "Le code postal chinois doit être 6 chiffres.";
+            break;
+          case "KR":
+            isValid = /^\d{5}$/.test(postalCode);
+            errorMessage = "Le code postal sud-coréen doit être 5 chiffres.";
+            break;
+          case "US":
+            isValid = /^\d{5}(-\d{4})?$/.test(postalCode);
+            errorMessage = "Le code postal américain doit être 5 chiffres ou 5+4 (ex. 12345 ou 12345-6789).";
+            break;
+          case "FR":
+            isValid = /^\d{5}$/.test(postalCode) && postalCode >= "01000" && postalCode <= "98999";
+            errorMessage = "Le code postal français doit être 5 chiffres (01000-98999).";
+            break;
+          case "IT":
+            isValid = /^\d{5}$/.test(postalCode) && postalCode >= "00010" && postalCode <= "98168";
+            errorMessage = "Le code postal italien doit être 5 chiffres (00010-98168).";
+            break;
+          case "JP":
+            isValid = /^\d{3}-?\d{4}$/.test(postalCode);
+            errorMessage = "Le code postal japonais doit être 7 chiffres (ex. 123-4567).";
+            break;
+          case "NL":
+            isValid = /^\d{4}\s?[A-Z]{2}$/.test(postalCode);
+            errorMessage = "Le code postal néerlandais doit être 4 chiffres + 2 lettres (ex. 1234 AB).";
+            break;
+          case "GB":
+            isValid = /^[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}$/.test(postalCode);
+            errorMessage = "Le code postal britannique doit suivre le format (ex. SW1A 1AA).";
+            break;
+          case "CH":
+            isValid = /^\d{4}$/.test(postalCode) && postalCode >= "1000" && postalCode <= "9999";
+            errorMessage = "Le code postal suisse doit être 4 chiffres (1000-9999).";
+            break;
+          default:
+            isValid = /^\d{3,10}$/.test(postalCode);
+            errorMessage = "Le code postal doit être entre 3 et 10 chiffres.";
+            break;
+        }
+
+        if (!isValid && postalCode) {
+          showError(errorMessage);
+          codePostalInput.setCustomValidity(errorMessage);
+        } else {
+          codePostalInput.setCustomValidity("");
+          document.getElementById("error-message").style.display = "none";
+        }
+      }
+
+      codePostalInput.addEventListener("input", validatePostalCode);
+      paysSelect.addEventListener("change", validatePostalCode);
+
       const updateForm = (adresse) => {
         document.getElementById('rue').value = adresse.rue || "";
         document.getElementById('etage').value = adresse.etage || "";
         document.getElementById('residence').value = adresse.residence || "";
         document.getElementById('ville').value = adresse.ville || "";
         document.getElementById('code_postal').value = adresse.code_postal || "";
-        document.getElementById('pays').value = adresse.pays || "";
-        document.getElementById('telephone').value = adresse.telephone || "";
-        document.getElementById('type_adresse').value = adresse.type_adresse || "0";
+        document.getElementById('type_adresse').value = adresse.type_adresse || "";
         document.getElementById('id').value = adresse.id || "";
         adresse_idInput.value = adresse.id || "";
+        paysSelect.value = adresse.pays || "";
+        validatePostalCode();
+
+        const phone = adresse.telephone || "";
+        let foundCode = false;
+        for (const code in favoriteCountries) {
+          if (phone.startsWith(favoriteCountries[code].phoneCode)) {
+            phoneCodeSelect.value = favoriteCountries[code].phoneCode;
+            telephoneInput.value = phone.slice(favoriteCountries[code].phoneCode.length);
+            foundCode = true;
+            break;
+          }
+        }
+        if (!foundCode) {
+          phoneCodeSelect.value = "";
+          telephoneInput.value = phone;
+        }
       };
 
-      // Recharge les adresses depuis l'API
       async function reloadAdresses() {
         try {
           const response = await fetch(`/api/adresse_contact/${client_id}`);
           const data = await response.json();
           if (response.ok && data.adresses.length > 0) {
             adresses = data.adresses;
-            adresses.sort((a, b) => a.id - b.id); // Trie les adresses par ID
+            adresses.sort((a, b) => a.id - b.id);
             currentIndex = adresses.length - 1;
-            updateForm(adresses[currentIndex]); // Met à jour le formulaire
-            document.getElementById("louerButton").style.display = "block";  // Affiche le bouton Louer
+            updateForm(adresses[currentIndex]);
+            document.getElementById("louerButton").style.display = "block";
           } else {
-            document.getElementById("louerButton").style.display = "none";  // Cache le bouton Louer
+            document.getElementById("louerButton").style.display = "none";
           }
         } catch (error) {
           console.error("Erreur lors du rechargement des adresses :", error);
+          showError("Impossible de recharger les adresses.");
         }
       }
 
-      // Charge les adresses au chargement de la page
       try {
         const response = await fetch(`/api/adresse_contact/${client_id}`);
         const data = await response.json();
         if (response.ok && data.adresses.length > 0) {
           adresses = data.adresses;
-          adresses.sort((a, b) => a.id - b.id); // Trie les adresses par ID
+          adresses.sort((a, b) => a.id - b.id);
           currentIndex = 0;
-          updateForm(adresses[currentIndex]); // Met à jour le formulaire
-          document.getElementById("louerButton").style.display = "block";  // Affiche le bouton Louer
+          updateForm(adresses[currentIndex]);
+          document.getElementById("louerButton").style.display = "block";
         } else {
-          document.getElementById("addressForm").reset(); // Réinitialise le formulaire
+          document.getElementById("addressForm").reset();
           document.getElementById('client_id').value = client_id;
-          document.getElementById("louerButton").style.display = "none";  // Cache le bouton Louer
+          document.getElementById("louerButton").style.display = "none";
         }
       } catch (error) {
         console.error("Erreur lors de la récupération de l'adresse :", error);
-        document.getElementById("louerButton").style.display = "none";  // Cache le bouton Louer en cas d'erreur
+        showError("Impossible de charger les adresses.");
       }
 
-      // Gestion du bouton "Suivant"
+      telephoneInput.addEventListener('input', () => {
+        const value = telephoneInput.value;
+        if (!/^\d{5,20}$/.test(value.replace(/^\+?\d{1,4}/, ''))) {
+          telephoneInput.setCustomValidity("Entrez un numéro valide (5-20 chiffres)");
+          telephoneInput.reportValidity();
+        } else {
+          telephoneInput.setCustomValidity("");
+        }
+      });
+
       document.getElementById('nextButton').addEventListener('click', () => {
         if (currentIndex < adresses.length - 1) {
           currentIndex++;
-          updateForm(adresses[currentIndex]); // Met à jour le formulaire
+          updateForm(adresses[currentIndex]);
         } else {
           const clientIdValue = client_idInput.value;
-          document.getElementById("addressForm").reset(); // Réinitialise le formulaire
+          document.getElementById("addressForm").reset();
           client_idInput.value = clientIdValue;
           currentIndex = adresses.length;
-          document.getElementById('rue').focus(); // Met le focus sur le champ "rue"
+          document.getElementById('rue').focus();
         }
       });
 
-      // Gestion du bouton "Précédent"
       document.getElementById('prevButton').addEventListener('click', () => {
         if (currentIndex > 0) {
           currentIndex--;
-          updateForm(adresses[currentIndex]); // Met à jour le formulaire
+          updateForm(adresses[currentIndex]);
         }
       });
 
-      // Gestion de la soumission du formulaire
       document.getElementById("addressForm").addEventListener("submit", async function (event) {
         event.preventDefault();
-        const client_idFromForm = document.getElementById("client_id").value;
-        if (!client_idFromForm) {
-           console.error("Erreur : client_id manquant dans le formulaire.");
-           return;
+
+        // Contrôle frontend des champs requis
+        const requiredFields = {
+          "client_id": client_idInput.value,
+          "rue": rueInput.value,
+          "ville": villeInput.value,
+          "code_postal": codePostalInput.value,
+          "pays": paysSelect.value,
+          "telephone": telephoneInput.value,
+          "type_adresse": typeAdresseSelect.value
+        };
+
+        const missingFields = Object.keys(requiredFields).filter(key => !requiredFields[key]);
+        if (missingFields.length > 0) {
+          showError("Tous les champs requis doivent être remplis : " + missingFields.join(", "));
+          return;
         }
+
+        validatePostalCode();
+        if (codePostalInput.validationMessage) {
+          return;
+        }
+
         const formDataRaw = new FormData(event.target);
         const formData = Object.fromEntries(formDataRaw.entries());
-        formData.client_id = client_idFromForm;
-        
+        formData.client_id = requiredFields.client_id;
+
+        let phoneNumber = telephoneInput.value;
+        if (phoneCodeSelect.value && phoneCodeSelect.value !== "" && phoneNumber.startsWith("0")) {
+          phoneNumber = phoneNumber.slice(1);
+        }
+        const phoneCode = phoneCodeSelect.value && phoneCodeSelect.value !== "" ? phoneCodeSelect.value : "";
+        formData.telephone = phoneCode + phoneNumber;
+
         const endpoint = formData.id ? `/api/adresse_contact/${formData.id}` : '/api/adresse_contact';
         const method = formData.id ? 'PUT' : 'POST';
         try {
-           const response = await fetch(endpoint, {
-             method: method,
-             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify(formData)
-           });
-           const result = await response.json();
-           if (result.success) {
-             alert("Adresse enregistrée avec succès !");
-             if (method === 'POST') {
-                await reloadAdresses(); // Recharge les adresses après une création
-             } else if (method === 'PUT') {
-                adresses[currentIndex] = { ...adresses[currentIndex], ...formData }; // Met à jour l'adresse
-                updateForm(adresses[currentIndex]); // Met à jour le formulaire
-             }
-           } else {
-             document.getElementById("error-message").textContent = "Erreur : " + result.error;
-             document.getElementById("error-message").style.display = "block";
-           }
+          const response = await fetch(endpoint, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+          });
+          const result = await response.json();
+          if (result.success) {
+            showSuccess("Adresse enregistrée avec succès !");
+            if (method === 'POST') {
+              await reloadAdresses();
+            } else if (method === 'PUT') {
+              adresses[currentIndex] = { ...adresses[currentIndex], ...formData };
+              updateForm(adresses[currentIndex]);
+            }
+          } else {
+            showError("Erreur lors de l'enregistrement : " + (result.error || "inconnue"));
+          }
         } catch (error) {
-           console.error("Erreur lors de l'envoi :", error);
-           document.getElementById("error-message").textContent = "Une erreur est survenue.";
-           document.getElementById("error-message").style.display = "block";
+          console.error("Erreur lors de l'envoi :", error);
+          showError("Une erreur réseau est survenue.");
         }
       });
+
+      function showError(message) {
+        const errorDiv = document.getElementById("error-message");
+        errorDiv.textContent = message;
+        errorDiv.style.display = "block";
+        setTimeout(() => {
+          errorDiv.style.display = "none";
+        }, 5000);
+      }
+
+      function showSuccess(message) {
+        const successDiv = document.getElementById("success-message");
+        successDiv.textContent = message;
+        successDiv.style.display = "block";
+        setTimeout(() => {
+          successDiv.style.display = "none";
+        }, 5000);
+      }
     });
   </script>
 </body>

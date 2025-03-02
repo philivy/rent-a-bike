@@ -3,244 +3,187 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bienvenue à Rent-a-Bike</title>
+  <title>Rent-a-Bike</title>
   <style>
-    /* Styles existants */
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background-color: #f4f4f4;
-    }
+    body { font-family: Arial, sans-serif; text-align: center; background: #f4f4f4; }
+    form { background: #e6f7e6; max-width: 400px; margin: 20px auto; padding: 20px; border-radius: 10px; box-shadow: 0px 4px 8px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
+    input, button { width: 100%; padding: 10px; font-size: 16px; border-radius: 5px; margin-bottom: 10px; }
+    button { background: #28a745; color: white; cursor: pointer; border: none; }
+    button:hover { background: #218838; }
+    .error { color: red; font-size: 14px; display: none; }
+    .hidden { display: none; }
+    
+    .form-group {
+  margin-bottom: 15px;
+  text-align: left;
+}
 
-    form {
-      background: #e6f7e6;
-      max-width: 378px;
-      margin: 20px auto;
-      padding: 35px;
-      border-radius: 10px;
-      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
+input:focus {
+  outline: 2px solid #28a745;
+  outline-offset: 2px;
+}
 
-    input[type="email"],
-    input[type="password"],
-    input[type="text"] {
-      width: 100%;
-      padding: 13px;
-      font-size: 16px;
-      border: 1px solid #ccc;
-      border-radius: 25px;
-      margin: 0 auto 15px;
-      box-sizing: border-box;
-    }
-
-    button {
-      font-size: 21px;
-      background-color: #28a745;
-      color: white;
-      padding: 13px;
-      border: none;
-      border-radius: 25px;
-      cursor: pointer;
-      transition: 0.3s;
-      margin-top: 10px;
-      width: 50%;
-      align-self: center;
-    }
-
-    button:hover {
-      background-color: #218838;
-    }
-
-    .error-message {
-      color: red;
-      font-size: 20px;
-      display: none;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    /* Nouveaux styles pour le bouton jaune et la pop-up */
-    .help-button {
-      background-color: #ffcc00;
-      color: black;
-      font-size: 21px;
-      padding: 13px;
-      border: none;
-      border-radius: 25px;
-      cursor: pointer;
-      margin-left: 10px;
-      width: 50px; /* Largeur fixe pour le bouton d'aide */
-    }
-
-    .popup {
-      display: none;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background-color: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-      z-index: 1000;
-    }
-
-    .popup p {
-      margin: 0;
-    }
-
-    .overlay {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
-      z-index: 999;
-    }
+@media (max-width: 480px) {
+  form {
+    margin: 10px;
+    padding: 15px;
+  }
+}
   </style>
 </head>
 <body>
   <h1>Bienvenue à Rent-a-Bike</h1>
-  <form id="clientForm">
-    <div class="hidden" id="extraFields">
-      <div>
-        <input type="text" name="nom" id="nom" placeholder="Nom" />
-      </div>
-      <div>
-        <input type="text" name="prenom" id="prenom" placeholder="Prénom" />
-      </div>
-      <div>
-        <input type="text" name="magasin_id" id="magasin_id" placeholder="Magasin ID" readonly value="1" />
-      </div>
-    </div>
-    <div>
-      <input type="email" name="email" placeholder="Email" id="emailInput" required />
-      <div id="emailError" class="error-message">Format email invalide</div>
-      <div id="emailNotFoundError" class="error-message">Email inconnu</div>
-      <div id="emailUsedError" class="error-message">L'email est déjà utilisé</div>
-    </div>
-    <div>
-      <input type="password" name="password" placeholder="Mot de passe" id="passwordInput" required />
-    </div>
-    <div style="display: flex; justify-content: center;">
-      <button type="submit" id="submitButton">Se connecter</button>
-      <button type="button" class="help-button" id="helpButton">?</button>
-    </div>
+  <form id="clientForm" aria-label="Formulaire de connexion ou inscription">
+    <input type="email" id="emailInput" placeholder="Email" required>
+
+    <div id="emailError" class="error">Email invalide</div>
+    <div id="emailNotFound" class="error">Email inconnu</div>
+    <div id="emailUsed" class="error">Email déjà utilisé</div>
+    
+    <input type="password" id="passwordInput" placeholder="Mot de passe" class="hidden">
+    <input type="text" id="nomInput" placeholder="Nom" class="hidden">
+    <input type="text" id="prenomInput" placeholder="Prénom" class="hidden">
+    <input type="text" id="magasinInput" value="5" readonly class="hidden">
+    
+    <button type="submit" id="submitButton">Se connecter / S'inscrire</button>
   </form>
 
-  <!-- Pop-up et overlay -->
-  <div class="overlay" id="overlay"></div>
-  <div class="popup" id="popup">
-    <p>Tu n'es pas abonné : saisis quand même un email et un mot de passe.<br>
-    Le bouton "Se connecter" va changer en "S'abonner".<br>
-    Bonne inscription et connexion !</p>
-    <button type="button" onclick="closePopup()">Fermer</button>
-  </div>
-
   <script>
-    // Fonctions existantes
-    document.getElementById("clientForm").addEventListener("submit", function (event) {
-      event.preventDefault();
-      resetErrors();
-      const submitButton = document.getElementById("submitButton");
+  // Constants
+const API_ENDPOINTS = {
+  checkEmail: '/api/checkEmail',
+  login: '/api/login',
+  subscribe: '/api/subscribe'
+};
 
-      if (submitButton.dataset.action === "subscribe") {
-        subscribe();
-      } else {
-        login();
-      }
+// Form state management
+class FormManager {
+  constructor() {
+    this.form = document.getElementById('clientForm');
+    this.submitButton = document.getElementById('submitButton');
+    this.errorElements = {
+      email: document.getElementById('emailError'),
+      notFound: document.getElementById('emailNotFound'),
+      used: document.getElementById('emailUsed')
+    };
+  }
+
+  showError(elementId) {
+    this.errorElements[elementId].style.display = 'block';
+    setTimeout(() => this.errorElements[elementId].style.display = 'none', 5000);
+  }
+
+  toggleFields(show, isRegistration = false) {
+    const fields = ['passwordInput', 'nomInput', 'prenomInput'];
+    fields.forEach(id => {
+      const element = document.getElementById(id);
+      element.classList.toggle('hidden', !show);
+      element.required = isRegistration;
     });
+  }
+}
 
-    function resetErrors() {
-      document.getElementById("emailError").style.display = "none";
-      document.getElementById("emailNotFoundError").style.display = "none";
-      document.getElementById("emailUsedError").style.display = "none";
-    }
-
-    function showExtraFields() {
-      document.getElementById("extraFields").classList.remove("hidden");
-    }
-
-    function login() {
-      fetch('/api/login', {
+// API Handler
+class APIHandler {
+  static async request(endpoint, data) {
+    try {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: document.getElementById("emailInput").value,
-          password: document.getElementById("passwordInput").value
-        })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.error === "Email inconnu") {
-          document.getElementById("emailNotFoundError").style.display = "block";
-          document.getElementById("submitButton").textContent = "S'abonner";
-          document.getElementById("submitButton").dataset.action = "subscribe";
-          showExtraFields();
-        } else if (data.error === "Mot de passe incorrect") {
-          document.getElementById("emailNotFoundError").style.display = "block";
-        } else {
-          alert('Connexion réussie');
-          window.location.href = `adresse_contact.html?id_client=${data.client_id}`;
-        }
-      })
-      .catch(error => console.error('Erreur:', error));
-    }
-
-    function subscribe() {
-      const nom = document.getElementById("nom").value;
-      const prenom = document.getElementById("prenom").value;
-      const magasinId = document.getElementById("magasin_id").value;
-
-      if (!nom || !prenom) {
-        alert("Veuillez remplir tous les champs obligatoires.");
-        return;
-      }
-
-      fetch('/api/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: document.getElementById("emailInput").value,
-          password: document.getElementById("passwordInput").value,
-          nom: nom,
-          prenom: prenom,
-          magasin_id: magasinId
-        })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          alert("Inscription réussie!");
-          window.location.href = "login.html";
-        } else {
-          alert("Erreur lors de l'inscription");
-        }
-      })
-      .catch(error => {
-        console.error("Erreur lors de l'inscription:", error);
-        alert("Une erreur est survenue");
+        body: JSON.stringify(data)
       });
+      return await response.json();
+    } catch (error) {
+      console.error(`Error in ${endpoint}:`, error);
+      throw error;
+    }
+  }
+}
+
+// Main logic
+document.addEventListener('DOMContentLoaded', () => {
+  const formManager = new FormManager();
+
+  formManager.form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('emailInput').value;
+
+    if (!validateEmail(email)) {
+      formManager.showError('email');
+      return;
     }
 
-    // Nouvelle fonction pour afficher la pop-up
-    document.getElementById("helpButton").addEventListener("click", function () {
-      document.getElementById("popup").style.display = "block";
-      document.getElementById("overlay").style.display = "block";
-    });
+    try {
+      const emailExists = await APIHandler.request(API_ENDPOINTS.checkEmail, { email });
 
-    // Fonction pour fermer la pop-up
-    function closePopup() {
-      document.getElementById("popup").style.display = "none";
-      document.getElementById("overlay").style.display = "none";
+      if (!emailExists.exists) {
+        // Registration flow
+        formManager.submitButton.textContent = "S'inscrire";
+        formManager.toggleFields(true, true);
+        
+        if (!await waitForFormCompletion()) return;
+        await handleSubscription();
+      } else {
+        // Login flow
+        formManager.submitButton.textContent = "Se connecter";
+        formManager.toggleFields(true);
+        document.getElementById('emailInput').readOnly = true;
+        await handleLogin();
+      }
+    } catch (error) {
+      console.error('Form submission error:', error);
     }
+  });
+});
+
+async function waitForFormCompletion() {
+  return new Promise(resolve => {
+    const checkInterval = setInterval(() => {
+      const formData = getFormData();
+      if (formData.password && (!formData.nom || formData.prenom)) {
+        clearInterval(checkInterval);
+        resolve(true);
+      }
+    }, 100);
+  });
+}
+
+function getFormData() {
+  return {
+    email: document.getElementById('emailInput').value,
+    password: document.getElementById('passwordInput').value,
+    nom: document.getElementById('nomInput').value,
+    prenom: document.getElementById('prenomInput').value,
+    magasinId: document.getElementById('magasinInput').value
+  };
+}
+
+async function handleLogin() {
+  const { email, password } = getFormData();
+  const data = await APIHandler.request(API_ENDPOINTS.login, { email, password });
+  
+  if (data.error) {
+    formManager.showError('notFound');
+  } else {
+    window.location.href = `adresse_contact.html?id_client=${data.client_id}`;
+  }
+}
+
+async function handleSubscription() {
+  const formData = getFormData();
+  const data = await APIHandler.request(API_ENDPOINTS.subscribe, formData);
+  
+  if (data.success) {
+    window.location.href = `adresse_contact.html?id_client=${data.client_id}`;
+  } else {
+    formManager.showError('used');
+  }
+}
+
+function validateEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
   </script>
 </body>
 </html>
+

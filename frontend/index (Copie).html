@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rent-a-Bike</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; background: #f4f4f4; }
+    form { background: #e6f7e6; max-width: 400px; margin: 20px auto; padding: 20px; border-radius: 10px; box-shadow: 0px 4px 8px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
+    input, button { width: 100%; padding: 10px; font-size: 16px; border-radius: 5px; margin-bottom: 10px; }
+    button { background: #28a745; color: white; cursor: pointer; border: none; }
+    button:hover { background: #218838; }
+    .error { color: red; font-size: 14px; display: none; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <h1>Bienvenue à Rent-a-Bike</h1>
+  <form id="clientForm" aria-label="Formulaire de connexion ou inscription">
+    <input type="email" id="emailInput" placeholder="Email" required>
+
+    <div id="emailError" class="error">Email invalide</div>
+    <div id="emailNotFound" class="error">Email inconnu</div>
+    <div id="emailUsed" class="error">Email déjà utilisé</div>
+    
+    <input type="password" id="passwordInput" placeholder="Mot de passe" class="hidden">
+    <input type="text" id="nomInput" placeholder="Nom" class="hidden">
+    <input type="text" id="prenomInput" placeholder="Prénom" class="hidden">
+    <input type="text" id="magasinInput" value="5" readonly class="hidden">
+    
+    <button type="submit" id="submitButton">Se connecter / S'inscrire</button>
+  </form>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+  console.log("Page chargée");
+   toggleRequiredFields(false);
+});
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+document.getElementById("clientForm").addEventListener("submit", async function (event) {
+  event.preventDefault();
+  console.log("Formulaire soumis");
+
+  const email = document.getElementById("emailInput").value;
+  const password = document.getElementById("passwordInput").value;
+  const nom = document.getElementById("nomInput").value;
+  const prenom = document.getElementById("prenomInput").value;
+
+  // Vérification de l'email
+  if (!validateEmail(email)) {
+    console.log("Email invalide");
+    document.getElementById("emailError").style.display = "block";
+    return;
+  }
+//////////////////////////////////////////////////////////////////////////////////////
+  // Vérification de l'existence de l'email dans la base de données
+/////////////////////////////////////////////////////////////////////////////////
+  const emailExists = await checkEmail(email);
+  console.log("Email existe ?", emailExists);
+
+  // Si l'email n'existe pas, on affiche les champs pour l'inscription
+  if (!emailExists) {
+    // Affichage des champs d'inscription
+    showFieldsForSubscription();
+        // chagement de label sur bouton soumission 
+     const submitButton = document.getElementById("submitButton");
+  submitButton.textContent = "S'abonner";
+  submitButton.dataset.action = "login";
+    
+    
+    /* Attente que l'utilisateur remplisse les champs requis*/
+    const isFormValid = await waitForFormCompletion();
+    if (!isFormValid) {
+      console.log("waitForFormCompletion");
+      return;
+    }
+    
+    
+    // Si le formulaire est valide, on lance l'inscription
+    subscribe();
+    return; // On arrête ici pour éviter toute soumission multiple
+  }
+
+  // Si l'email existe, on affiche le champ du mot de passe et on tente la connexion
+  const submitButton = document.getElementById("submitButton");
+  submitButton.textContent = "Se connecter";
+  submitButton.dataset.action = "login";
+
+  // Affichage du champ mot de passe et possibilité de se connecter
+  document.getElementById("passwordInput").classList.remove("hidden");
+  document.getElementById("emailInput").setAttribute("readonly", true);  // L'email est déjà saisi et ne peut pas être modifié
+
+  login();  // Essayer de se connecter avec l'email et le mot de passe
+});
+///////////////////////////////////////////////////////////////////////////////////////////////
+// Fonction qui affiche les champs supplémentaires pour l'inscription
+function showFieldsForSubscription() {
+  console.log("Affichage des champs d'inscription");
+  ["passwordInput", "nomInput", "prenomInput"].forEach(id => {
+    document.getElementById(id).classList.remove("hidden");
+  });
+  toggleRequiredFields(true);
+}
+
+// Fonction qui attend que tous les champs requis soient remplis avant de soumettre
+async function waitForFormCompletion() {
+  const password = document.getElementById("passwordInput").value;
+  const nom = document.getElementById("nomInput").value;
+  const prenom = document.getElementById("prenomInput").value;
+
+  // Retourne true si tous les champs sont remplis
+  return password && nom && prenom;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+function toggleRequiredFields(required) {
+  ["passwordInput", "nomInput", "prenomInput"].forEach(id => {
+    document.getElementById(id).required = required;
+  });
+}
+
+function showFieldsForSubscription() {
+  console.log("Affichage des champs d'inscription");
+  ["passwordInput", "nomInput", "prenomInput"].forEach(id => {
+    document.getElementById(id).classList.remove("hidden");
+  });
+  toggleRequiredFields(true);
+}
+
+function validateEmail(email) {
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return regex.test(email.trim());
+}
+
+async function checkEmail(email) {
+  try {
+    console.log("Vérification de l'email en cours...");
+    const response = await fetch('/api/checkEmail', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await response.json();
+    console.log("Réponse checkEmail:", data);
+    return data.exists;
+  } catch (error) {
+    console.error("Erreur checkEmail:", error);
+    return null;
+  }
+}
+
+async function login() {
+  const email = document.getElementById("emailInput").value;
+  const password = document.getElementById("passwordInput").value;
+
+  console.log("Tentative de connexion avec:", { email, password });
+
+  try {
+    const response = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await response.json();
+    console.log("Réponse login:", data);
+
+    if (data.error) {
+      console.error("Erreur connexion:", data.error);
+      document.getElementById("emailNotFoundError").style.display = "block";
+    } else {
+      console.log ("Connexion réussie");
+      window.location.href = `adresse_contact.html?id_client=${data.client_id}`;
+    }
+  } catch (error) {
+    console.error("Erreur login:", error);
+  }
+}
+
+async function subscribe() {
+  const nom = document.getElementById("nomInput").value;
+  const prenom = document.getElementById("prenomInput").value;
+  const magasinId = document.getElementById("magasinInput").value;
+  const email = document.getElementById("emailInput").value;
+  const password = document.getElementById("passwordInput").value;
+
+  console.log("Tentative d'inscription avec:", { email, password, nom, prenom, magasinId });
+
+  try {
+    const response = await fetch('/api/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, nom, prenom, magasin_id: magasinId })
+    });
+    const data = await response.json();
+    console.log("Réponse subscribe:", data);
+
+    if (data.success) {
+      console.log("Inscription réussie!");
+      window.location.href = `adresse_contact.html?id_client=${data.client_id}`;
+    } else {
+      console.error("Erreur inscription:", data.error);
+      alert("Erreur lors de l'inscription");
+    }
+  } catch (error) {
+    console.error("Erreur subscribe:", error);
+    alert("Une erreur est survenue");
+  }
+}
+
+  </script>
+</body>
+</html>
+

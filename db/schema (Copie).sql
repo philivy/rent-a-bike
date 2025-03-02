@@ -36,20 +36,16 @@ CREATE TRIGGER mylist_capitalize_trigger
 BEFORE INSERT OR UPDATE ON system.mylist
 FOR EACH ROW EXECUTE FUNCTION system.capitalize_first_letter();
 
--- Insertion des valeurs pour les listes system
-INSERT INTO system.mylist (list_entete, list_raw) VALUES
-    ('Sexe', 'Homme'),
-    ('Sexe', 'Femme'),
-    ('Sexe', 'Enfant'),
-    ('Propulsion', 'Mécanique'),
-    ('Propulsion', 'Électrique'),
-    ('Statut', 'En Cours'),
-    ('Statut', 'Annulation'),
-    ('Statut', 'Archivage'),
-    ('Paiement', 'Cb'),
-    ('Paiement', 'Virement'),
-    ('Paiement', 'Espèces'),
-    ('Paiement', 'PayPal');
+-- Ajout des valeurs pour les listes system 
+INSERT INTO system.mylist (list_entete, list_raw) VALUES ('Sexe', 'Homme');
+INSERT INTO system.mylist (list_entete, list_raw) VALUES ('Sexe', 'Femme');
+INSERT INTO system.mylist (list_entete, list_raw) VALUES ('Sexe', 'Enfant');
+INSERT INTO system.mylist (list_entete, list_raw) VALUES ('Propulsion', 'Mécanique');
+INSERT INTO system.mylist (list_entete, list_raw) VALUES ('Propulsion', 'Électrique');
+INSERT INTO "system".mylist (list_entete,list_raw) VALUES
+	 ('Statut','En Cours'),
+	 ('Statut','Annulation'),
+	 ('Statut','Archivage');
 
 -- Table des clients
 CREATE TABLE client (
@@ -102,42 +98,14 @@ CREATE TABLE article (
     magasin_id INTEGER REFERENCES magasin_location(id) ON DELETE SET NULL,
     ref_magasin VARCHAR(100) NOT NULL,
     designation VARCHAR(100) NOT NULL,
-    sexe VARCHAR(255),  
-    propulsion VARCHAR(255),  
+    sexe_id INTEGER REFERENCES system.mylist(id) ON DELETE SET NULL,  -- Correction
+    propulsion_id INTEGER REFERENCES system.mylist(id) ON DELETE SET NULL, -- Correction
     description VARCHAR(100) NOT NULL,
     etat VARCHAR(100) NOT NULL,
     disponible BOOLEAN DEFAULT TRUE,
     photo BYTEA,
     qrcode BYTEA
 );
-
--- Trigger pour valider le sexe
-CREATE OR REPLACE FUNCTION validate_sexe() RETURNS TRIGGER AS $$
-BEGIN
-    IF NEW.sexe NOT IN (SELECT list_raw FROM system.mylist WHERE list_entete = 'Sexe') THEN
-        RAISE EXCEPTION 'Valeur invalide pour sexe: %', NEW.sexe;
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_validate_sexe
-BEFORE INSERT OR UPDATE ON article
-FOR EACH ROW EXECUTE FUNCTION validate_sexe();
-
--- Trigger pour valider la propulsion
-CREATE OR REPLACE FUNCTION validate_propulsion() RETURNS TRIGGER AS $$
-BEGIN
-    IF NEW.propulsion NOT IN (SELECT list_raw FROM system.mylist WHERE list_entete = 'Propulsion') THEN
-        RAISE EXCEPTION 'Valeur invalide pour propulsion: %', NEW.propulsion;
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_validate_propulsion
-BEFORE INSERT OR UPDATE ON article
-FOR EACH ROW EXECUTE FUNCTION validate_propulsion();
 
 -- Table des réservations
 CREATE TABLE reservation (
@@ -147,24 +115,10 @@ CREATE TABLE reservation (
     start_date TIMESTAMP NOT NULL,
     end_date TIMESTAMP NOT NULL,
     commentaire TEXT,
-    status VARCHAR(255), -- Changé en VARCHAR et renommé en "status"
+    statut_id INTEGER REFERENCES system.mylist(id) ON DELETE SET NULL, -- system.mylist en cours #6 
     magasin_id INTEGER REFERENCES magasin_location(id) ON DELETE SET NULL,
     CHECK (start_date < end_date)
 );
-
--- Trigger pour valider le statut
-CREATE OR REPLACE FUNCTION validate_status() RETURNS TRIGGER AS $$
-BEGIN
-    IF NEW.status NOT IN (SELECT list_raw FROM system.mylist WHERE list_entete = 'Statut') THEN
-        RAISE EXCEPTION 'Valeur invalide pour status: %', NEW.status;
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_validate_status
-BEFORE INSERT OR UPDATE ON reservation
-FOR EACH ROW EXECUTE FUNCTION validate_status();
 
 -- Table des paiements
 CREATE TABLE paiement (
@@ -172,23 +126,9 @@ CREATE TABLE paiement (
     reservation_id INTEGER REFERENCES reservation(id) ON DELETE CASCADE,
     montant DECIMAL(10, 2) NOT NULL,
     date_paiement TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    moyen_paiement VARCHAR(50),
+    moyen_paiement VARCHAR(50) CHECK (moyen_paiement IN ('CB', 'Virement', 'Espèces', 'PayPal')),
     magasin_id INTEGER REFERENCES magasin_location(id) ON DELETE SET NULL
 );
-
--- Trigger pour valider le moyen de paiement
-CREATE OR REPLACE FUNCTION validate_moyen_paiement() RETURNS TRIGGER AS $$
-BEGIN
-    IF NEW.moyen_paiement NOT IN (SELECT list_raw FROM system.mylist WHERE list_entete = 'Paiement') THEN
-        RAISE EXCEPTION 'Valeur invalide pour moyen_paiement: %', NEW.moyen_paiement;
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_validate_moyen_paiement
-BEFORE INSERT OR UPDATE ON paiement
-FOR EACH ROW EXECUTE FUNCTION validate_moyen_paiement();
 
 -- Ajout de la clé étrangère magasin_id dans client
 ALTER TABLE client
@@ -196,3 +136,4 @@ ADD CONSTRAINT fk_magasin
 FOREIGN KEY (magasin_id) REFERENCES magasin_location(id) ON DELETE SET NULL;
 
 COMMIT;
+
