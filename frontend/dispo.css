@@ -85,36 +85,24 @@ th {
   background-color: #f4f4f4; /* Couleur de fond pour les en-têtes - Gris très clair */
 }
 
-/* Style du bouton de location */
-#louerButton {
-  font-size: 18px; /* Taille de la police */
-  background-color: pink; /* Couleur de fond - Rose */
-  color: white; /* Couleur du texte - Blanc */
-  border: none; /* Supprime la bordure */
-  border-radius: 10px; /* Bords arrondis */
-  width: 100px; /* Largeur */
-  height: 100px; /* Hauteur */
-  cursor: pointer; /* Curseur en forme de main */
-  transition: 0.3s; /* Transition fluide */
-  display: block; /* Affiche en bloc */
-  margin-top: 20px; /* Marge en haut */
-}
+  /* Style partagé pour les boutons Louer */
+  .louer-button {
+    font-size: 18px;
+    background-color: #006400; /* Vert foncé */
+    color: white;
+    border: none;
+    border-radius: 10px;
+    width: 100px;
+    height: 50px;
+    cursor: pointer;
+    transition: 0.3s;
+    display: none; /* Caché par défaut */
+  }
 
-#louerButton:hover {
-  background-color: #e6007e; /* Changement de couleur au survol - Rose foncé */
-}
-
-/* Positionnement du bouton "Louer" */
-.navigation-buttons {
-  position: relative; /* Position relative pour les éléments enfants */
-}
-
-#louerButton {
-  position: absolute; /* Position absolue */
-  right: 10px; /* Alignement à droite */
-  top: 0; /* Alignement en haut */
-}
-
+  .louer-button:hover {
+    background-color: #006400; /* Même couleur au survol - pas de changement */
+  }
+  
 /* Style de la modale de confirmation */
 #confirmationModal {
   display: none; /* Cachée par défaut */

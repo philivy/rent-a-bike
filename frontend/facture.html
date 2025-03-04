@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Facture de Réservation</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
+    .container { max-width: 900px; margin: 0 auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); }
+    h1 { text-align: center; color: #333; margin-bottom: 20px; }
+    .section { margin-bottom: 20px; }
+    .section h2 { color: #555; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+    .info p { margin: 10px 0; line-height: 1.6; }
+    .info strong { color: #555; }
+    .info span { color: #000; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
+    th { background-color: #f0f0f0; color: #333; }
+    .total-row { font-weight: bold; background-color: #f9f9f9; }
+    .error-message { color: red; text-align: center; font-weight: bold; }
+    select { padding: 5px; margin-left: 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Facture de Réservation</h1>
+    <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+    <div class="section">
+      <h2>Informations Client</h2>
+      <div class="info">
+        <p><strong>ID Client :</strong> <span id="clientId"></span></p>
+        <p><strong>Nom :</strong> <span id="clientName"></span></p>
+        <p><strong>Adresse :</strong> <span id="clientAddressDisplay"></span></p>
+      </div>
+    </div>
+
+    <div class="section" id="shopSection" style="display: none;">
+      <h2>Informations du Magasin</h2>
+      <div class="info">
+        <p><strong>Nom :</strong> <span id="shopName"></span></p>
+        <p><strong>Adresse :</strong> <span id="shopAddress"></span></p>
+        <p><strong>Téléphone :</strong> <span id="shopPhone"></span></p>
+        <p><strong>Email :</strong> <span id="shopEmail"></span></p>
+      </div>
+    </div>
+
+    <div class="section" id="invoiceSection" style="display: none;">
+      <h2>Détails de la Réservation</h2>
+      <div class="info">
+        <p><strong>ID(s) de Réservation :</strong> <span id="reservationIds"></span></p>
+        <p><strong>Date de Début :</strong> <span id="startDate"></span></p>
+        <p><strong>Date de Fin :</strong> <span id="endDate"></span></p>
+        <h3>Informations des Vélos</h3>
+        <table id="bikeDetails">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Réf. Magasin</th>
+              <th>Désignation</th>
+              <th>Prix Horaire</th>
+              <th>Prix Demi-Journée</th>
+              <th>Prix Journée</th>
+            </tr>
+          </thead>
+          <tbody id="bikeTableBody"></tbody>
+        </table>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>ID Vélo</th>
+            <th>Période</th>
+            <th>Durée de Location</th>
+            <th>Type de Tarif</th>
+            <th>Coût HT</th>
+            <th>TVA (20%)</th>
+            <th>Coût TTC</th>
+          </tr>
+        </thead>
+        <tbody id="articleDetails"></tbody>
+        <tfoot>
+          <tr class="total-row">
+            <td colspan="4">Total</td>
+            <td id="totalHT"></td>
+            <td id="totalTVA"></td>
+            <td id="totalTTC"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <script src="/scripts/function.js"></script>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const reservationIds = params.get("reservationIds")?.split(',') || [];
+    const startDate = params.get("start_date");
+    const endDate = params.get("end_date");
+    const articleIds = params.get("articles")?.split(',') || [];
+    const clientId = params.get("client_id");
+    const status = params.get("status");
+
+    const formatDate = (dateString) => {
+      if (!dateString) return "Non défini";
+      const date = new Date(dateString);
+      return date.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    };
+
+    const calculateDuration = (start, end) => {
+      const startTime = new Date(start);
+      const endTime = new Date(end);
+      const diffMs = endTime - startTime;
+      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      return { days, hours, totalHours: days * 24 + hours };
+    };
+
+    const formatDuration = (duration) => {
+      const parts = [];
+      if (duration.days > 0) parts.push(`${duration.days} jour${duration.days > 1 ? 's' : ''}`);
+      if (duration.hours > 0) parts.push(`${duration.hours} heure${duration.hours > 1 ? 's' : ''}`);
+      return parts.join(' ');
+    };
+
+    const loadArticles = async () => {
+      try {
+        const response = await fetch('/api/facture/articles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ articleIds })
+        });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Erreur lors de la récupération des articles");
+        }
+        return await response.json();
+      } catch (error) {
+        console.error("Erreur lors de la récupération des articles :", error.message);
+        throw error;
+      }
+    };
+
+    const verifyMagasinConsistency = (articles) => {
+      const magasinIds = [...new Set(articles.map(article => article.magasin_id))];
+      if (magasinIds.length > 1) {
+        throw new Error("Les articles proviennent de différents magasins : " + magasinIds.join(', '));
+      }
+      return magasinIds[0];
+    };
+
+    const displayClientInfo = async () => {
+      try {
+        const response = await fetch(`/api/facture/client/${clientId}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Erreur HTTP ${response.status}: ${errorText}`);
+        }
+        const client = await response.json();
+
+        document.getElementById("clientId").textContent = clientId || "Non défini";
+        document.getElementById("clientName").textContent = client.nom || "Non défini";
+
+        const addressDisplay = document.getElementById("clientAddressDisplay");
+
+        if (client.adresses.length === 1) {
+          const adresse = client.adresses[0];
+          const typeLabel = adresse.type_adresse === 0 ? "Domicile" : adresse.type_adresse === 1 ? "Livraison" : "Autre";
+          addressDisplay.textContent = `${typeLabel}: ${adresse.formatted} - Tél: ${adresse.telephone}`;
+        } else {
+          const select = document.createElement("select");
+          select.id = "clientAddressSelect";
+
+          client.adresses.forEach((adresse, index) => {
+            const option = document.createElement("option");
+            const typeLabel = adresse.type_adresse === 0 ? "Domicile" : adresse.type_adresse === 1 ? "Livraison" : "Autre";
+            option.value = index;
+            option.text = `${typeLabel}: ${adresse.formatted} - Tél: ${adresse.telephone}`;
+            select.appendChild(option);
+          });
+
+          const updateAddressDisplay = () => {
+            addressDisplay.textContent = select.options[select.selectedIndex].text;
+          };
+
+          select.addEventListener("change", updateAddressDisplay);
+          addressDisplay.textContent = "";
+          addressDisplay.appendChild(select);
+          updateAddressDisplay();
+        }
+      } catch (error) {
+        console.error("Erreur détaillée lors de la récupération des infos client :", error.message);
+        document.getElementById("clientId").textContent = clientId || "Non défini";
+        document.getElementById("clientName").textContent = `Erreur: ${error.message}`;
+        document.getElementById("clientAddressDisplay").textContent = "Erreur de chargement";
+      }
+    };
+
+    const displayShopInfo = async (magasinId) => {
+      try {
+        const responseShop = await fetch(`/api/facture/magasin/${magasinId}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        if (!responseShop.ok) throw new Error("Erreur lors de la récupération du magasin");
+        const magasin = await responseShop.json();
+
+        document.getElementById("shopName").textContent = magasin.nom || "Non défini";
+        document.getElementById("shopAddress").textContent = magasin.adresse || "Non défini";
+        document.getElementById("shopPhone").textContent = magasin.telephone || "Non défini";
+        document.getElementById("shopEmail").textContent = magasin.email || "Non défini";
+        document.getElementById("shopSection").style.display = "block";
+      } catch (error) {
+        console.error("Erreur lors de la récupération des infos du magasin :", error);
+        document.getElementById("shopName").textContent = "Erreur de chargement";
+        document.getElementById("shopAddress").textContent = "Erreur de chargement";
+        document.getElementById("shopPhone").textContent = "Erreur de chargement";
+        document.getElementById("shopEmail").textContent = "Erreur de chargement";
+      }
+    };
+
+    const displayInvoiceDetails = async (articles) => {
+      document.getElementById("reservationIds").textContent = reservationIds.join(', ') || "Non défini";
+      document.getElementById("startDate").textContent = formatDate(startDate);
+      document.getElementById("endDate").textContent = formatDate(endDate);
+
+      const bikeTableBody = document.getElementById("bikeTableBody");
+      articles.forEach(article => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${article.id}</td>
+          <td>${article.ref_magasin}</td>
+          <td>${article.designation}</td>
+          <td>${formatFrenchNumber(parseFrenchNumber(article.prix_horaire))} €</td>
+          <td>${formatFrenchNumber(parseFrenchNumber(article.prix_demi_journee))} €</td>
+          <td>${formatFrenchNumber(parseFrenchNumber(article.prix_journee))} €</td>
+        `;
+        bikeTableBody.appendChild(row);
+      });
+
+      const duration = calculateDuration(startDate, endDate);
+      const durationText = formatDuration(duration);
+      const articleDetails = document.getElementById("articleDetails");
+      let totalHT = 0;
+      let totalTVA = 0;
+      let totalTTC = 0;
+
+      for (const article of articles) {
+        const { tarifType, costHT, tva, costTTC } = calculateCost(duration.totalHours, 
+          parseFrenchNumber(article.prix_horaire), 
+          parseFrenchNumber(article.prix_demi_journee), 
+          parseFrenchNumber(article.prix_journee)
+        );
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${article.id}</td>
+          <td>${formatDate(startDate)} - ${formatDate(endDate)}</td>
+          <td>${durationText}</td>
+          <td>${tarifType}</td>
+          <td>${formatFrenchNumber(costHT)} €</td>
+          <td>${formatFrenchNumber(tva)} €</td>
+          <td>${formatFrenchNumber(costTTC)} €</td>
+        `;
+        articleDetails.appendChild(row);
+
+        totalHT += costHT;
+        totalTVA += tva;
+        totalTTC += costTTC;
+      }
+
+      document.getElementById("totalHT").textContent = formatFrenchNumber(totalHT) + " €";
+      document.getElementById("totalTVA").textContent = formatFrenchNumber(totalTVA) + " €";
+      document.getElementById("totalTTC").textContent = formatFrenchNumber(totalTTC) + " €";
+      document.getElementById("invoiceSection").style.display = "block";
+    };
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      try {
+        const articles = await loadArticles();
+        const magasinId = verifyMagasinConsistency(articles);
+
+        await displayClientInfo();
+        await displayShopInfo(magasinId);
+        await displayInvoiceDetails(articles);
+      } catch (error) {
+        document.getElementById("errorMessage").textContent = error.message;
+        document.getElementById("errorMessage").style.display = "block";
+      }
+    });
+  </script>
+</body>
+</html>

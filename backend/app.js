@@ -1,16 +1,14 @@
-// Charger les variables d'environnement depuis le fichier .env
 require('dotenv').config();
 const fs = require('fs');
 const express = require('express');
 const { Pool } = require('pg');
-const cors = require('cors'); // Importez le module cors
+const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
 
 const app = express();
-const PORT = 8080; // 🚀 Uniformisation du port
+const PORT = 8080;
 
-// Middleware JSON
 app.use(bodyParser.json());
 
 // Middleware pour ajouter Access-Control-Allow-Private-Network
@@ -21,21 +19,11 @@ app.use((req, res, next) => {
 
 // Configuration CORS
 app.use(cors({
-  origin: 'https://846a-88-180-120-69.ngrok-free.app', // Autoriser uniquement cette origine
-  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Méthodes autorisées
-  allowedHeaders: ['Content-Type', 'Authorization'], // En-têtes autorisés
-  credentials: true, // Autoriser les cookies si nécessaire
-  preflightContinue: true
+  origin: ['http://localhost:8080', 'https://efb8-88-180-120-69.ngrok-free.app'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
 }));
-
-// Middleware pour gérer les requêtes OPTIONS (pré-vérification CORS)
-app.options('*', (req, res) => {
-  res.header('Access-Control-Allow-Origin', 'https://846a-88-180-120-69.ngrok-free.app');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.header('Access-Control-Allow-Private-Network', 'true'); // Ajouter cette ligne
-  res.sendStatus(204); // Répondre avec un statut 204 (No Content)
-});
 
 // Connexion à PostgreSQL
 const pool = new Pool({
@@ -51,36 +39,42 @@ pool.query('SELECT NOW()', (err, res) => {
   if (err) {
     console.error("❌ Erreur de connexion à PostgreSQL:", err.message);
   } else {
-    console.log("✅ Connecté à PostgreSQL pour l'authentification");
+    console.log("✅ Connecté à PostgreSQL");
   }
 });
 
-// 🔹 Routes API (avant les fichiers statiques)
+// Importer les routes
 const adresseRoutes = require('./routes/adresseRoutes');
-console.log("🔍 adresseRoutes:", adresseRoutes);
-
 const loginRouter = require('./routes/login');
-console.log("🔍 loginRouter:", loginRouter);
-
 const subscribeRoutes = require('./routes/subscribeRoutes');
-console.log("🔍 subscribeRoutes:", subscribeRoutes);
-
 const dispoRoutes = require('./routes/dispoRoutes');
-console.log("🔍 dispoRoutes:", dispoRoutes);
+const factureRoutes = require('./routes/factureRoutes');
 
-app.use('/api', adresseRoutes);
-app.use('/api', loginRouter);
-app.use('/api', subscribeRoutes);
-app.use('/api', dispoRoutes);
+// Monter les routes directement sous /api
+app.use('/api/adresse', adresseRoutes);
+app.use('/api/login', loginRouter);
+app.use('/api/subscribe', subscribeRoutes);
+app.use('/api/dispo', dispoRoutes);    
+app.use('/api/facture', factureRoutes);
 
-// 🔹 Servir les fichiers statiques après les routes API
+////////////////////////////////////////////////////////////////
+// Servir les fichiers statiques (HTML, CSS, JS)
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// 🔹 Route principale (éviter de bloquer les routes API)
-app.get('*', (req, res) => {
-  const indexPath = path.join(__dirname, '../frontend', 'index.html');
+// Servir le dossier scripts
+app.use('/scripts', express.static(path.join(__dirname, '../frontend/scripts'), {
+  setHeaders: (res, path) => {
+    console.log(`Serveur envoie le fichier: ${path}`); // Log pour vérifier la demande
+    if (path.endsWith('.js')) {
+      res.set('Content-Type', 'application/javascript');
+    }
+  }
+}));
 
-  // Vérifier si index.html existe pour éviter des erreurs 404
+// Route catch-all
+app.get('*', (req, res) => {
+ console.log(`Catch-all déclenché pour: ${req.url}`);
+  const indexPath = path.join(__dirname, '../frontend', 'index.html');
   if (fs.existsSync(indexPath)) {
     res.sendFile(indexPath);
   } else {
@@ -88,8 +82,6 @@ app.get('*', (req, res) => {
   }
 });
 
-// 🔹 Démarrer le serveur
 app.listen(PORT, () => {
   console.log(`🚀 Serveur démarré sur http://localhost:${PORT}`);
 });
-

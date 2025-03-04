@@ -451,7 +451,7 @@
 
       async function reloadAdresses() {
         try {
-          const response = await fetch(`/api/adresse_contact/${client_id}`);
+          const response = await fetch(`/api/adresse/adresse_contact/${client_id}`);
           const data = await response.json();
           if (response.ok && data.adresses.length > 0) {
             adresses = data.adresses;
@@ -469,7 +469,7 @@
       }
 
       try {
-        const response = await fetch(`/api/adresse_contact/${client_id}`);
+        const response = await fetch(`/api/adresse/adresse_contact/${client_id}`);
         const data = await response.json();
         if (response.ok && data.adresses.length > 0) {
           adresses = data.adresses;
@@ -553,7 +553,7 @@
         const phoneCode = phoneCodeSelect.value && phoneCodeSelect.value !== "" ? phoneCodeSelect.value : "";
         formData.telephone = phoneCode + phoneNumber;
 
-        const endpoint = formData.id ? `/api/adresse_contact/${formData.id}` : '/api/adresse_contact';
+        const endpoint = formData.id ? `/api/adresse/adresse_contact/${formData.id}` : '/api/adresse/adresse_contact';
         const method = formData.id ? 'PUT' : 'POST';
         try {
           const response = await fetch(endpoint, {

@@ -23,8 +23,10 @@ router.post('/rechercher', async (req, res) => {
   }
 
   try {
-    const startDateTime = `${start_date} ${start_time}:00`;
-    const endDateTime = `${end_date} ${end_time}:00`;
+// Combiner date et heure avec un format compatible avec timestamptz
+    const startDateTime = `${start_date}T${start_time}:00Z`; // Ajout de 'Z' pour UTC, ajustable selon besoin
+    const endDateTime = `${end_date}T${end_time}:00Z`;
+
 
     const query = `
       SELECT 
@@ -48,7 +50,7 @@ router.post('/rechercher', async (req, res) => {
           FROM reservation r
           WHERE r.article_id = a.id
           AND (r.start_date, r.end_date) OVERLAPS ($1::timestamp, $2::timestamp)
-          AND r.status = 'En cours'
+          AND r.status = 'En Cours'
       )
     `;
 
@@ -82,5 +84,65 @@ router.post('/rechercher', async (req, res) => {
   }
 });
 
+
+// Route pour créer une nouvelle réservation
+router.post('/louer', async (req, res) => {
+  const { start_date, end_date, articles, client_id, status } = req.body;
+
+  console.log("📌 Données reçues pour /louer :", { start_date, end_date, articles, client_id, status });
+
+  // Validation des données reçues
+  if (!start_date || !end_date || !articles || !client_id || !status) {
+    return res.status(400).json({ message: "Tous les champs sont requis : start_date, end_date, articles, client_id, status." });
+  }
+
+  if (!Array.isArray(articles) || articles.length === 0) {
+    return res.status(400).json({ message: "La liste des articles doit être un tableau non vide." });
+  }
+
+  try {
+    // Insertion des réservations
+    await pool.query('BEGIN');
+
+    const insertQuery = `
+      INSERT INTO reservation (client_id, article_id, start_date, end_date, status)
+      VALUES ($1, $2, $3::timestamptz, $4::timestamptz, $5)
+      RETURNING id
+    `;
+
+    const insertedReservations = [];
+    for (const articleId of articles) {
+      const result = await pool.query(insertQuery, [
+        client_id,
+        articleId,
+        start_date,
+        end_date,
+        status
+      ]);
+      insertedReservations.push(result.rows[0].id);
+    }
+
+    await pool.query('COMMIT');
+
+    console.log("✅ Réservations créées avec succès, IDs :", insertedReservations);
+
+    // Retourner les données envoyées + les IDs des réservations
+    res.status(201).json({
+      message: "Réservations créées avec succès",
+      reservationIds: insertedReservations,
+      reservationData: {
+        start_date,
+        end_date,
+        articles,
+        client_id,
+        status
+      }
+    });
+  } catch (error) {
+    await pool.query('ROLLBACK');
+    console.error("❌ Erreur lors de la création des réservations :", error.message);
+    res.status(500).json({ message: "Erreur lors de la création des réservations : " + error.message });
+  }
+});
 // Ne pas oublier
 module.exports = router; // ✅ Export correct

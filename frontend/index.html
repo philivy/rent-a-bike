@@ -47,13 +47,14 @@ input:focus {
     
     <button type="submit" id="submitButton">Se connecter / S'inscrire</button>
   </form>
+<link rel="icon" href="favicon.ico" type="image/x-icon">
 
   <script>
   // Constants
 const API_ENDPOINTS = {
-  checkEmail: '/api/checkEmail',
-  login: '/api/login',
-  subscribe: '/api/subscribe'
+  checkEmail: '/api/login/checkEmail',
+  login: '/api/login/login',
+  subscribe: '/api/login/subscribe'
 };
 
 // Form state management

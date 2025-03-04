@@ -13,6 +13,9 @@ CREATE SCHEMA IF NOT EXISTS system;
 
 BEGIN;
 
+-- Activer l'extension btree_gist pour supporter les contraintes GIST
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+
 -- Création de la table générique pour les listes
 CREATE TABLE system.mylist (
     id SERIAL PRIMARY KEY,
@@ -112,7 +115,7 @@ CREATE TABLE article (
 );
 
 -- Trigger pour valider le sexe
-CREATE OR REPLACE FUNCTION validate_sexe() RETURNS TRIGGER AS $$
+CREATE OR REPLACEAm FUNCTION validate_sexe() RETURNS TRIGGER AS $$
 BEGIN
     IF NEW.sexe NOT IN (SELECT list_raw FROM system.mylist WHERE list_entete = 'Sexe') THEN
         RAISE EXCEPTION 'Valeur invalide pour sexe: %', NEW.sexe;
@@ -139,17 +142,21 @@ CREATE TRIGGER trg_validate_propulsion
 BEFORE INSERT OR UPDATE ON article
 FOR EACH ROW EXECUTE FUNCTION validate_propulsion();
 
--- Table des réservations
+-- Table des réservations (modifiée)
 CREATE TABLE reservation (
     id SERIAL PRIMARY KEY,
     client_id INTEGER REFERENCES client(id) ON DELETE CASCADE,
     article_id INTEGER REFERENCES article(id) ON DELETE CASCADE,
-    start_date TIMESTAMP NOT NULL,
-    end_date TIMESTAMP NOT NULL,
+    start_date TIMESTAMP WITH TIME ZONE NOT NULL,  -- Spécifier explicitement WITH TIME ZONE
+    end_date TIMESTAMP WITH TIME ZONE NOT NULL,
     commentaire TEXT,
-    status VARCHAR(255), -- Changé en VARCHAR et renommé en "status"
+    status VARCHAR(100),
     magasin_id INTEGER REFERENCES magasin_location(id) ON DELETE SET NULL,
-    CHECK (start_date < end_date)
+    CHECK (start_date < end_date),
+    EXCLUDE USING GIST (
+        article_id WITH =,
+        TSTZRANGE(start_date::timestamptz, end_date::timestamptz) WITH &&
+    )
 );
 
 -- Trigger pour valider le statut
